@@ -13,14 +13,21 @@ datasource db {
 }
 
 model Document {
-  id          String   @id @default(cuid())
-  filename    String   @unique
-  title       String
-  content     String
-  embedding   Unsupported("vector(1536)")?
-  metadata    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  filename        String
+  title           String
+  content         String
+  embedding       Unsupported("vector(1536)")?
+  metadata        Json?
+  isChunked       Boolean  @default(false)
+  parentDocId     String?
+  chunkIndex      Int?
+  totalChunks     Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  @@unique([filename, chunkIndex])
+  @@index([parentDocId])
+  @@index([filename])
   @@map("documents")
 }

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -8,6 +8,10 @@ export interface DocumentData {
   content: string;
   embedding: number[];
   metadata?: any;
+  isChunked?: boolean;
+  parentDocId?: string;
+  chunkIndex?: number;
+  totalChunks?: number;
 }
 
 export interface SearchResult {
@@ -21,9 +25,9 @@ export interface SearchResult {
 
 export class DatabaseService {
   private static instance: DatabaseService;
-  
+
   private constructor() {}
-  
+
   public static getInstance(): DatabaseService {
     if (!DatabaseService.instance) {
       DatabaseService.instance = new DatabaseService();
@@ -39,10 +43,14 @@ export class DatabaseService {
   async storeDocument(documentData: DocumentData): Promise<string> {
     try {
       // Use raw SQL to insert with proper vector type
-      const embeddingString = `[${documentData.embedding.join(',')}]`;
-      
-      const result = await prisma.$queryRaw`
-        INSERT INTO documents (id, filename, title, content, embedding, metadata, "createdAt", "updatedAt")
+      const embeddingString = `[${documentData.embedding.join(",")}]`;
+
+      const result = (await prisma.$queryRaw`
+        INSERT INTO documents (
+          id, filename, title, content, embedding, metadata, 
+          "isChunked", "parentDocId", "chunkIndex", "totalChunks",
+          "createdAt", "updatedAt"
+        )
         VALUES (
           gen_random_uuid()::text,
           ${documentData.filename},
@@ -50,16 +58,24 @@ export class DatabaseService {
           ${documentData.content},
           ${embeddingString}::vector,
           ${JSON.stringify(documentData.metadata || {})}::jsonb,
+          ${documentData.isChunked || false},
+          ${documentData.parentDocId || null},
+          ${
+            documentData.chunkIndex !== undefined
+              ? documentData.chunkIndex
+              : null
+          },
+          ${documentData.totalChunks || null},
           NOW(),
           NOW()
         )
         RETURNING id
-      ` as any[];
-      
+      `) as any[];
+
       return result[0].id;
     } catch (error) {
-      console.error('Error storing document:', error);
-      throw new Error('Failed to store document');
+      console.error("Error storing document:", error);
+      throw new Error("Failed to store document");
     }
   }
 
@@ -76,36 +92,49 @@ export class DatabaseService {
     threshold: number = 0.3
   ): Promise<SearchResult[]> {
     try {
-      const embeddingString = `[${queryEmbedding.join(',')}]`;
-      
+      const embeddingString = `[${queryEmbedding.join(",")}]`;
+
       // Using raw SQL for vector similarity search with pgvector
-      const results = await prisma.$queryRaw`
+      // Exclude parent documents (those with placeholder content) by filtering
+      // documents where chunkIndex IS NULL OR parentDocId IS NOT NULL
+      const results = (await prisma.$queryRaw`
         SELECT 
           id,
           filename,
           title,
           content,
           metadata,
+          "isChunked",
+          "parentDocId",
+          "chunkIndex",
+          "totalChunks",
           1 - (embedding <=> ${embeddingString}::vector) as similarity
         FROM documents
         WHERE embedding IS NOT NULL
+          AND ("chunkIndex" IS NULL OR "parentDocId" IS NOT NULL)
         ORDER BY embedding <=> ${embeddingString}::vector
         LIMIT ${limit}
-      ` as any[];
+      `) as any[];
 
       return results
-        .filter(result => result.similarity >= threshold)
-        .map(result => ({
+        .filter((result) => result.similarity >= threshold)
+        .map((result) => ({
           id: result.id,
           filename: result.filename,
           title: result.title,
           content: result.content,
-          metadata: result.metadata,
+          metadata: {
+            ...result.metadata,
+            isChunked: result.isChunked,
+            parentDocId: result.parentDocId,
+            chunkIndex: result.chunkIndex,
+            totalChunks: result.totalChunks,
+          },
           similarity: parseFloat(result.similarity),
         }));
     } catch (error) {
-      console.error('Error searching documents:', error);
-      throw new Error('Failed to search documents');
+      console.error("Error searching documents:", error);
+      throw new Error("Failed to search documents");
     }
   }
 
@@ -127,8 +156,8 @@ export class DatabaseService {
 
       return documents;
     } catch (error) {
-      console.error('Error fetching documents:', error);
-      throw new Error('Failed to fetch documents');
+      console.error("Error fetching documents:", error);
+      throw new Error("Failed to fetch documents");
     }
   }
 
@@ -139,13 +168,38 @@ export class DatabaseService {
    */
   async documentExists(filename: string): Promise<boolean> {
     try {
-      const document = await prisma.document.findUnique({
+      const document = await prisma.document.findFirst({
         where: { filename },
       });
-      
+
       return !!document;
     } catch (error) {
-      console.error('Error checking document existence:', error);
+      console.error("Error checking document existence:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if a specific document chunk already exists
+   * @param filename The filename to check
+   * @param chunkIndex The chunk index to check
+   * @returns Promise<boolean> True if chunk exists
+   */
+  async documentChunkExists(
+    filename: string,
+    chunkIndex: number
+  ): Promise<boolean> {
+    try {
+      const document = await prisma.document.findFirst({
+        where: {
+          filename,
+          chunkIndex,
+        },
+      });
+
+      return !!document;
+    } catch (error) {
+      console.error("Error checking document chunk existence:", error);
       return false;
     }
   }
@@ -159,8 +213,8 @@ export class DatabaseService {
       const result = await prisma.document.deleteMany();
       return result.count;
     } catch (error) {
-      console.error('Error clearing documents:', error);
-      throw new Error('Failed to clear documents');
+      console.error("Error clearing documents:", error);
+      throw new Error("Failed to clear documents");
     }
   }
 
@@ -169,6 +223,6 @@ export class DatabaseService {
    */
   async disconnect(): Promise<void> {
     await prisma.$disconnect();
-    console.log('Database connection closed');
+    console.log("Database connection closed");
   }
 }

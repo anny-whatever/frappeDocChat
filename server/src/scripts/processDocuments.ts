@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { EmbeddingService } from "../services/embeddingService.js";
 import { DatabaseService } from "../services/databaseService.js";
+import { TextChunker } from "../utils/textChunker.js";
 
 const SCRAPED_DOCS_DIR = path.join(process.cwd(), "scraped_docs");
 
@@ -64,6 +65,7 @@ class DocumentProcessor {
 
   /**
    * Process a single document: generate embedding and store in database
+   * Handles chunking for large documents automatically
    * @param document The document to process
    */
   private async processDocument(document: DocumentInfo): Promise<void> {
@@ -79,26 +81,112 @@ class DocumentProcessor {
 
       console.log(`Processing document: ${document.filename}`);
 
-      // Generate embedding for the document content
-      const embedding = await this.embeddingService.generateEmbedding(
-        document.content
-      );
-
-      // Store document with embedding in database
-      await this.databaseService.storeDocument({
-        filename: document.filename,
-        title: document.title,
-        content: document.content,
-        embedding,
-        metadata: {
-          processedAt: new Date().toISOString(),
-          contentLength: document.content.length,
-        },
-      });
+      // Check if document needs chunking
+      if (TextChunker.needsChunking(document.content)) {
+        console.log(
+          `Document exceeds token limit, chunking: ${document.filename}`
+        );
+        await this.processChunkedDocument(document);
+      } else {
+        await this.processSingleDocument(document);
+      }
 
       console.log(`Successfully processed: ${document.filename}`);
     } catch (error) {
       console.error(`Error processing document ${document.filename}:`, error);
+    }
+  }
+
+  /**
+   * Process a document that fits within token limits
+   * @param document The document to process
+   */
+  private async processSingleDocument(document: DocumentInfo): Promise<void> {
+    // Generate embedding for the document content
+    const embedding = await this.embeddingService.generateEmbedding(
+      document.content
+    );
+
+    // Store document with embedding in database
+    await this.databaseService.storeDocument({
+      filename: document.filename,
+      title: document.title,
+      content: document.content,
+      embedding,
+      isChunked: false,
+      metadata: {
+        processedAt: new Date().toISOString(),
+        contentLength: document.content.length,
+      },
+    });
+  }
+
+  /**
+   * Process a large document by splitting it into chunks
+   * @param document The document to chunk and process
+   */
+  private async processChunkedDocument(document: DocumentInfo): Promise<void> {
+    // Split document into chunks
+    const chunks = TextChunker.chunkText(document.content);
+    console.log(`Split into ${chunks.length} chunks`);
+
+    // Store parent document metadata (without embedding)
+    const parentDocId = await this.databaseService.storeDocument({
+      filename: document.filename,
+      title: document.title,
+      content: `[Chunked Document - ${chunks.length} parts]`,
+      embedding: new Array(1536).fill(0), // Placeholder embedding
+      isChunked: true,
+      totalChunks: chunks.length,
+      metadata: {
+        processedAt: new Date().toISOString(),
+        contentLength: document.content.length,
+        chunkingInfo: TextChunker.getChunkingMetadata(chunks),
+      },
+    });
+
+    // Process each chunk
+    for (const chunk of chunks) {
+      // Check if this specific chunk already exists
+      const chunkExists = await this.databaseService.documentChunkExists(
+        document.filename,
+        chunk.chunkIndex
+      );
+
+      if (chunkExists) {
+        console.log(
+          `Chunk ${chunk.chunkIndex + 1}/${
+            chunks.length
+          } already exists, skipping`
+        );
+        continue;
+      }
+
+      console.log(`Processing chunk ${chunk.chunkIndex + 1}/${chunks.length}`);
+
+      // Generate embedding for the chunk
+      const embedding = await this.embeddingService.generateEmbedding(
+        chunk.content
+      );
+
+      // Store chunk with embedding
+      await this.databaseService.storeDocument({
+        filename: document.filename,
+        title: `${document.title} (Part ${chunk.chunkIndex + 1}/${
+          chunks.length
+        })`,
+        content: chunk.content,
+        embedding,
+        isChunked: true,
+        parentDocId,
+        chunkIndex: chunk.chunkIndex,
+        totalChunks: chunks.length,
+        metadata: {
+          processedAt: new Date().toISOString(),
+          contentLength: chunk.content.length,
+          isChunk: true,
+        },
+      });
     }
   }
 
