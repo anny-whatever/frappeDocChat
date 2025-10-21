@@ -1,5 +1,5 @@
-import OpenAI from 'openai';
-import dotenv from 'dotenv';
+import OpenAI from "openai";
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -9,9 +9,9 @@ const openai = new OpenAI({
 
 export class EmbeddingService {
   private static instance: EmbeddingService;
-  
+
   private constructor() {}
-  
+
   public static getInstance(): EmbeddingService {
     if (!EmbeddingService.instance) {
       EmbeddingService.instance = new EmbeddingService();
@@ -27,15 +27,15 @@ export class EmbeddingService {
   async generateEmbedding(text: string): Promise<number[]> {
     try {
       const response = await openai.embeddings.create({
-        model: 'text-embedding-3-small',
+        model: "text-embedding-3-small",
         input: text,
-        encoding_format: 'float',
+        encoding_format: "float",
       });
 
       return response.data[0].embedding;
     } catch (error) {
-      console.error('Error generating embedding:', error);
-      throw new Error('Failed to generate embedding');
+      console.error("Error generating embedding:", error);
+      throw new Error("Failed to generate embedding");
     }
   }
 
@@ -47,15 +47,15 @@ export class EmbeddingService {
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
     try {
       const response = await openai.embeddings.create({
-        model: 'text-embedding-3-small',
+        model: "text-embedding-3-small",
         input: texts,
-        encoding_format: 'float',
+        encoding_format: "float",
       });
 
-      return response.data.map(item => item.embedding);
+      return response.data.map((item) => item.embedding);
     } catch (error) {
-      console.error('Error generating embeddings:', error);
-      throw new Error('Failed to generate embeddings');
+      console.error("Error generating embeddings:", error);
+      throw new Error("Failed to generate embeddings");
     }
   }
 
