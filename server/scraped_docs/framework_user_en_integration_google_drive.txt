@@ -1,0 +1,62 @@
+Google Drive is a file storage and synchronization service developed by Google. It allows users to store, synchronize and share files. Google Drive is a key component of Google Workspace, Google's monthly subscription offering for businesses.
+
+You can use Frappe Framework's file picker to select any file from Google Drive and attach it to the current DocType. For example, you can attach the invoice PDF stored in Google Drive to a Purchase Invoice in your Frappe app.
+
+Setup
+
+Google Cloud Console
+
+First we need to get some credentials that will allow us to access Google Drive. You can use the setup tool, which guides you through creating a project in the Google Cloud Console, enabling the API, and creating credentials.
+
+If you haven't done so already, create your application's API key by clicking Create credentials > API key. Next, look for your API key in the API keys section. You can open the API Key and restrict it.
+
+Under Application restrictions choose "HTTP referrers",
+under Website restrictions add your frappe instance's hostname and
+under API restrictions choose "Restrict key" and select the "Google Picker API".
+
+ 
+
+If you haven't done so already, create your OAuth 2.0 credentials by clicking Create credentials > OAuth client ID.
+
+Under Application type choose "Web application" and
+under Authorized JavaScript origins add your frappe instance's hostname.
+
+ 
+
+After you've created the credentials, you can see your client ID on the Credentials page.
+
+Last but not least you need to configure the OAuth Consent Screen. This is the page that users will see when they are using the Google Drive Picker for the first time. It asks them to grant access to their Google Drive. You can configure this as you like, just take care to add the scope https://www.googleapis.com/auth/drive.readonly on the Scopes page.
+
+You will also need your App ID at hand. This is your project number which you can find under IAM & Admin > Settings.
+
+ Portions of this section are modifications based on work created and shared by Google and used according to terms described in the Creative Commons 4.0 Attribution License.
+
+Frappe instance
+
+Now that the Google Picker API is enabled and we have the necessary credentials we can go ahead and configure the Google Settings in you Frappe instance.
+
+Open Google Settings.
+Check the Enable checkbox.
+In the "Google Drive Picker" section, check the Google Drive Picker Enabled checkbox.
+Enter your App ID, Client ID and API Key.
+Save the Google Settings and reload your browser window.
+
+ 
+
+Now when you click on "Attach file" in the sidebar, you should see the Google Drive icon.
+
+ 
+
+If you click on it for the first time, you have to authorize the Frappe app to access your Google Drive files.
+
+ 
+
+Then the Google Drive Picker opens and you can choose a file.
+
+ 
+
+Click the blue button on the bottom left to attach a link to this file to the current DocType.
+
+ 
+
+ In case you're looking for technical details, Google Drive was introduced in Pull Request #12715.

@@ -1,0 +1,36 @@
+Usage
+
+bench list-apps [OPTIONS]
+
+Description
+
+List all the Frappe Applications installed on the specified site. The
+information shown by the command is fetched from the Installed Applications
+DocType which tracks the latest version of the apps, the site was migrated to.
+The global default installed_apps is used as fallback.
+
+Multi-site support has been added in Version 13. To see the summary for all
+sites, run the command with site's value as all.
+
+Options
+
+--format, -f Choose the format for listing apps installed on the
+specified site, options being "text" and "json". Default is "json".
+
+Examples
+
+List apps installed on all sites.
+
+bench --site all list-apps
+
+List apps installed on all sites in parsable JSON format.
+
+bench --site all list-apps --format json
+
+List apps installed on a specific site in text format.
+
+bench --site {site} list-apps --format text
+
+bench --site {site} list-apps -f text
+
+bench --site {site} list-apps

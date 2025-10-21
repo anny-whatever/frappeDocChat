@@ -1,0 +1,177 @@
+Note: For production deployments or docker based development use frappe_docker.
+
+System Requirements
+
+This guide assumes you are using a personal computer, VPS or a bare-metal server. You also need to be on a *nix system, so any Linux Distribution and macOS is supported. If you're a Windows user, you could use Ubuntu in WSL. We officially support only the following distributions.
+
+macOS
+Debian / Ubuntu
+
+ Learn more about the architecture here.
+
+Pre-requisites
+
+MariaDB 10.6.6+ (11.3 is recommended on develop)
+Python 3.10+
+Node 18+
+Redis 6 (caching and realtime updates)
+yarn 1.12+ (js dependency manager)
+pip 20+ (py dependency manager)
+wkhtmltopdf (version 0.12.5 with patched qt) (for pdf generation)
+cron (bench's scheduled jobs: automated certificate renewal, scheduled backups)
+
+macOS
+
+Install command line version of Xcode tools.
+
+xcode-select --install
+
+Install Homebrew. It makes it easy to install packages on macOS.
+
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+(It may prompt you to run some additional commands at the end, which will ensure brew is available in your PATH)
+
+Install wkhtmltopdf
+
+curl -L https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-2/wkhtmltox-0.12.6-2.macos-cocoa.pkg -O
+
+installer -pkg wkhtmltox-0.12.6-2.macos-cocoa.pkg -target ~
+
+Now, you can easily install the required packages by running the following command
+
+brew install python@3.12 git redis mariadb@10.6 node@18 postgresql pkg-config mariadb-connector-c
+
+Now, edit the MariaDB configuration file (this step is not required for Frappe v15.21.0 or above).
+
+nano /usr/local/etc/my.cnf
+
+For Apple Silicon (non Intel macs), the path for the MariaDB config is
+
+nano /opt/homebrew/etc/my.cnf
+
+And add this configuration
+
+[mysqld]
+character-set-client-handshake = FALSE
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+bind-address = 127.0.0.1
+
+[mysql]
+default-character-set = utf8mb4
+
+Now, just restart the mysql service and you are good to go.
+
+brew services restart mariadb@10.6
+
+Install Yarn
+
+Install yarn using npm
+
+npm install -g yarn
+
+Debian / Ubuntu
+
+You should be running Debian 12+ or Ubuntu 22.04+, otherwise you may have issues with some of the packages.
+
+Update your system's package index
+
+sudo apt update
+
+Install git, python, and redis
+
+sudo apt install git python-is-python3 python3-dev python3-pip redis-server libmariadb-dev mariadb-server mariadb-client pkg-config
+
+During this installation you'll be prompted to set the MySQL root password. If you are not prompted, you'll have to initialize the MySQL server setup yourself. You can do that by running the command:
+
+mariadb-secure-installation
+
+ Remember: only run it if you're not prompted the password during setup.
+
+It is really important that you remember this password, since it'll be useful later on.
+
+Now, edit the MariaDB configuration file (this step is not required for Frappe v15.21.0 or above).
+
+nano /etc/mysql/my.cnf
+
+And add this configuration
+
+[mysqld]
+character-set-client-handshake = FALSE
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+[mysql]
+default-character-set = utf8mb4
+
+Now, just restart the MariaDB service and you are good to go.
+
+sudo systemctl restart mariadb
+
+Install Node
+
+We recommend installing node using nvm
+
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+
+After nvm is installed, you may have to close your terminal and open another one. Now run the following command to install node.
+
+nvm install 18 # or 20, 22
+
+Verify the installed version, by running:
+
+$ node -v
+v18.20.4
+
+Finally, install yarn using npm
+
+npm install -g yarn
+
+Install wkhtmltopdf
+
+sudo apt install xvfb libfontconfig
+
+Download and install wkhtmltopdf package from https://wkhtmltopdf.org/downloads.html, then run this command to install the package.
+
+sudo dpkg -i wkhtmltox_file.deb
+
+Install Bench CLI
+
+Install bench via pip
+
+pip install frappe-bench
+
+Note: depending on your OS and version of python, you may need to use pip3 instead of pip.
+
+Pip discourages system-wide installations, thus you might have to do something equivalent to source rcfile. Will vary depending on your OS. E.g. for Ubuntu
+
+source ~/.profile
+
+You may need to manually add the directory its installed to into your PATH. The output of pip install should indicate this if required. You can run something like this with the correct path to achieve this. 
+
+echo "export PATH=/path/to/bin:$PATH" >> ~/.profile
+source ~/.profile
+
+Depending on your OS version and python/pip version, you may get an error here regarding an externally-managed-environment
+
+You can work around this for now by running or use virtualenv
+
+pip install frappe-bench --break-system-packages
+
+An alternative method to do this is with uv and a shell alias
+
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+Add alias bench='uvx --from frappe-bench bench' to your shell rc file (.zshrc, .bashrc or similar)
+
+Confirm the bench installation by checking the version
+
+bench --version
+
+Create your first bench.
+
+cd ~
+bench init <directory name>
+
+Congratulations, you have installed bench onto your system.

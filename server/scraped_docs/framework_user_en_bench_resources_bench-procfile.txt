@@ -1,0 +1,31 @@
+bench start uses honcho to manage multiple processes in developer mode.
+
+Processes
+
+The various process that are needed to run frappe are:
+
+bench start - the web server
+redis_cache for caching (general)
+redis_queue for managing queue for background workers
+redis_socketio as a message broker for real-time updates / updates from background workers
+web for the frappe web server.
+socketio for real-time messaging.
+schedule to trigger periodic tasks
+worker_* redis workers to handle async jobs
+
+Optionally if you are developing for frappe you can add:
+
+bench watch to automatically build the desk javascript app.
+
+Sample
+
+redis_cache: redis-server config/redis_cache.conf
+ redis_socketio: redis-server config/redis_socketio.conf
+ redis_queue: redis-server config/redis_queue.conf
+ web: bench serve --port 8000
+ socketio: /usr/bin/node apps/frappe/socketio.js
+ watch: bench watch
+ schedule: bench schedule
+ worker_short: bench worker --queue short
+ worker_long: bench worker --queue long
+ worker_default: bench worker --queue default

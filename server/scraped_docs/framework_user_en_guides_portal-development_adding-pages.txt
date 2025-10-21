@@ -1,0 +1,37 @@
+To add pages, just add .html or .md files in the www folder. The pages must only have the content, not the and tags.
+
+You can also write markdown pages
+
+Index
+
+The first file in a folder must be called index.md or index.html
+
+Either file must be present for the system to make this a valid folder to build pages.
+
+Markdown
+
+# This is a title
+
+This is some page content
+ a link
+
+Adding Links
+
+Links urls to pages can be given without the .html extension for example /home/link
+
+Title
+
+The first `block if present will be the page title if not specified in a special tag. If no
+
+` or title is specified, the file name will be the title.
+
+Adding CSS
+
+You can also add a .css file with the same filename (e.g. index.css for index.md) that will be rendered with the page.
+
+Special Tags
+
+`` will make the page render in Jinja
+`` will add a custom title
+will not add breadcrumbs in the page
+<h1 id="4-will-enable-caching-if-you-have-used-jinja-templating">4. will enable caching (if you have used Jinja templating)

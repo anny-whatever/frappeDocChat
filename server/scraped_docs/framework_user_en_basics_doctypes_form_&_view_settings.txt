@@ -1,0 +1,15 @@
+View Settings
+
+Title Field
+
+A field of the DocType which will be displayed as a title in the Form
+
+Set the title field
+
+Enter the name of a custom field in 'Title Field'
+
+Show Title in Link Fields
+
+You can enable Show Title in Link Fields to display Title instead of Name in the Link Fields in another doctype.
+
+So if a custom field of 'link' type is added in another doctype (or through customize form), then the title of the linked document will be displayed in the field instead of name.

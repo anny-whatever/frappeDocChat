@@ -1,0 +1,8 @@
+Frappe framework allows you to script the standard models and views directly within the framework without additional code.
+
+Different ways of Scripting:
+
+Client Script
+Server Script
+Script Report
+System Console

@@ -1,0 +1,16 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "scrape:frappe": "node scrape/frappeScrape.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  }
+}

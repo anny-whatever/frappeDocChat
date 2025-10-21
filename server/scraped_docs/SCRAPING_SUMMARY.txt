@@ -1,0 +1,38 @@
+Frappe Documentation Scraping Summary
+======================================
+
+Total Pages Scraped: 224
+Success Rate: 100%
+Output Directory: /home/anny/Project/frappeDocChat/server/scraped_docs
+
+Statistics:
+-----------
+Total Lines: 21,814
+Average File Size: ~4.8KB
+
+Sample Files:
+-------------
+- framework_user_en_introduction.txt (2,188 chars)
+- framework_user_en_api_database.txt (10,470 chars)
+- framework_user_en_python-api_hooks.txt (40,789 chars - largest)
+
+Content Quality:
+----------------
+✓ HTML tags removed successfully
+✓ Text properly cleaned and formatted
+✓ Whitespace normalized
+✓ Each route saved to separate file
+
+File Naming Convention:
+-----------------------
+Route: framework/user/en/introduction
+File:  framework_user_en_introduction.txt
+
+Route slashes replaced with underscores for filesystem compatibility.
+
+Next Steps:
+-----------
+1. Files ready for vector embedding
+2. Can be used for RAG (Retrieval Augmented Generation)
+3. Ready for indexing in your chatbot system
+
