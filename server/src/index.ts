@@ -214,44 +214,59 @@ app.post("/api/chat/stream", async (req, res) => {
     "Access-Control-Allow-Headers": "Content-Type",
   });
 
-  let isClientConnected = true;
+  let connectionClosed = false;
 
   // Handle client disconnect
   req.on("close", () => {
     console.log("🔌 Client disconnected from stream");
-    isClientConnected = false;
+    connectionClosed = true;
   });
 
   req.on("error", (error) => {
     console.error("🚨 Request error:", error);
-    isClientConnected = false;
+    connectionClosed = true;
   });
 
-  // Connection check function
-  const checkConnection = () => !isClientConnected;
+  // Handle response errors
+  res.on("error", (error) => {
+    console.error("🚨 Response error:", error);
+    connectionClosed = true;
+  });
+
+  res.on("close", () => {
+    console.log("🔌 Response stream closed");
+    connectionClosed = true;
+  });
+
+  // Connection check function - returns true if connection is closed
+  const isConnectionClosed = () => connectionClosed;
 
   try {
     const { message, conversationHistory = [] } = req.body;
 
     if (!message) {
-      res.write(`event: error\n`);
-      res.write(`data: ${JSON.stringify({ error: "Message is required" })}\n\n`);
-      res.end();
+      if (!connectionClosed) {
+        res.write(`event: error\n`);
+        res.write(`data: ${JSON.stringify({ error: "Message is required" })}\n\n`);
+        res.end();
+      }
       return;
     }
 
     console.log(`📨 Received message: "${message}"`);
 
     // Send initial heartbeat
-    res.write(`event: heartbeat\n`);
-    res.write(`data: ${JSON.stringify({ timestamp: new Date().toISOString() })}\n\n`);
+    if (!connectionClosed) {
+      res.write(`event: heartbeat\n`);
+      res.write(`data: ${JSON.stringify({ timestamp: new Date().toISOString() })}\n\n`);
+    }
 
     // Start agent streaming
     await agentService.processMessageStream(
       message,
       conversationHistory,
       res,
-      checkConnection
+      isConnectionClosed
     );
 
     console.log("✅ Stream completed successfully");
@@ -259,17 +274,25 @@ app.post("/api/chat/stream", async (req, res) => {
   } catch (error) {
     console.error("🚨 Stream error:", error);
     
-    if (isClientConnected) {
-      res.write(`event: error\n`);
-      res.write(`data: ${JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error" 
-      })}\n\n`);
+    if (!connectionClosed) {
+      try {
+        res.write(`event: error\n`);
+        res.write(`data: ${JSON.stringify({ 
+          error: error instanceof Error ? error.message : "Unknown error" 
+        })}\n\n`);
+      } catch (writeError) {
+        console.error("❌ Error writing error response:", writeError);
+      }
     }
   } finally {
-    if (isClientConnected) {
-      res.write(`event: end\n`);
-      res.write(`data: ${JSON.stringify({ timestamp: new Date().toISOString() })}\n\n`);
-      res.end();
+    if (!connectionClosed) {
+      try {
+        res.write(`event: end\n`);
+        res.write(`data: ${JSON.stringify({ timestamp: new Date().toISOString() })}\n\n`);
+        res.end();
+      } catch (endError) {
+        console.error("❌ Error ending response:", endError);
+      }
     }
   }
 });

@@ -209,7 +209,7 @@ export function ChatPage() {
       <div className="overflow-hidden flex-1">
         <div className="container px-4 mx-auto max-w-4xl h-full">
           <ScrollArea
-            className="h-[calc(100vh-200px)] py-6"
+            className="h-[calc(100vh-200px)] py-6 px-4"
             ref={scrollAreaRef}
           >
             {messages.length === 0 ? (

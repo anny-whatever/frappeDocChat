@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import dotenv from "dotenv";
+import express from "express";
 import { ToolRegistry } from "./toolRegistry.ts";
 import { createRagTool, expandQuery } from "./tools/ragTool.ts";
 
@@ -105,36 +106,96 @@ export class AgentService {
   }
 
   /**
-   * Sanitize tool outputs before adding them to history to avoid bloating context.
-   * Keeps essential fields and truncates large text fields.
+   * Sanitize tool results for conversation context
    */
   private sanitizeToolResult(raw: any): any {
-    try {
-      const clone = JSON.parse(JSON.stringify(raw));
-      // If results array present (from RAG), map to lightweight entries
-      if (Array.isArray(clone?.results)) {
-        const perContentLimit = 1200; // chars per item
-        clone.results = clone.results.map((r: any) => ({
-          id: r.id,
-          title: r.title,
-          similarity: r.similarity,
-          sourceUrl: r.sourceUrl,
-          // keep a concise snippet only
-          content:
-            typeof r.content === "string"
-              ? r.content.slice(0, perContentLimit)
-              : undefined,
-          metadata: r.metadata ? { ...r.metadata } : undefined,
-        }));
-      }
-      // If top-level content is very large string, truncate
-      if (typeof clone?.content === "string" && clone.content.length > 2000) {
-        clone.content = clone.content.slice(0, 2000);
-      }
-      return clone;
-    } catch {
-      return raw;
+    if (typeof raw === "string") {
+      return { result: raw };
     }
+
+    if (Array.isArray(raw)) {
+      return {
+        results: raw.map((item) => {
+          if (typeof item === "object" && item !== null) {
+            // Keep only essential fields for context
+            return {
+              content: item.content || item.text || item.title || "",
+              source: item.source || item.url || "",
+              score: item.score || item.similarity || 0,
+            };
+          }
+          return item;
+        }),
+        count: raw.length,
+      };
+    }
+
+    if (typeof raw === "object" && raw !== null) {
+      return {
+        ...raw,
+        // Ensure we don't pass huge objects
+        content: raw.content || raw.text || raw.title || "",
+        source: raw.source || raw.url || "",
+      };
+    }
+
+    return raw;
+  }
+
+  /**
+   * Prepare search query from user message and conversation context
+   */
+  private prepareSearchQuery(message: string, conversationHistory: Message[]): string {
+    // For now, use the message directly, but could be enhanced with context
+    return message;
+  }
+
+  /**
+   * Search documentation using the RAG tool
+   */
+  private async searchDocumentation(query: string): Promise<any> {
+    try {
+      const expandedQueries = await expandQuery(query);
+      const result = await this.toolRegistry.executeTool("search_documentation", {
+        queries: expandedQueries,
+        limit: 5
+      });
+      return result;
+    } catch (error) {
+      console.error("❌ Error searching documentation:", error);
+      return { results: [], error: "Search failed" };
+    }
+  }
+
+  /**
+   * Build system message with search results context
+   */
+  private buildSystemMessage(searchResults: any): string {
+    const baseSystemMessage = `You are an expert Frappe Framework assistant. You help developers understand and use the Frappe framework effectively.
+
+Your capabilities:
+- You have access to the Frappe documentation through a search tool
+- You can search multiple variations of a query to find the best information
+- You provide accurate, helpful, and well-formatted answers
+
+When answering:
+1. Use the provided documentation context to answer questions accurately
+2. Cite the documentation sources you found
+3. If you can't find information, say so clearly
+4. Be concise but thorough
+
+Remember: Base your answers on the provided documentation context.`;
+
+    if (searchResults && searchResults.results && searchResults.results.length > 0) {
+      const contextSection = "\n\nDocumentation Context:\n" + 
+        searchResults.results.map((result: any, index: number) => 
+          `${index + 1}. ${result.content || result.text || 'No content'}\n   Source: ${result.source || 'Unknown'}`
+        ).join('\n\n');
+      
+      return baseSystemMessage + contextSection;
+    }
+
+    return baseSystemMessage;
   }
 
   /**
@@ -286,21 +347,20 @@ Remember: Use the search tool before answering any Frappe-related questions.`,
   }
 
   /**
-   * Process a user message through the agentic workflow with streaming
-   * Uses proper OpenAI streaming and SSE format
+   * Process a message with streaming response using proper OpenAI SDK v4 streaming
    */
   async processMessageStream(
-    userMessage: string,
+    message: string,
     conversationHistory: Message[] = [],
-    res: any,
-    onConnectionClosed: () => boolean
+    res: express.Response,
+    isConnectionClosed: () => boolean
   ): Promise<void> {
-    let isConnectionClosed = false;
+    console.log(`\n🤖 Processing message (streaming): "${message}"`);
 
-    // Helper function to write SSE data
+    // Helper function to write SSE data safely
     const writeSSE = (event: string, data: any): boolean => {
-      if (isConnectionClosed || onConnectionClosed()) {
-        console.log("🛑 Connection closed, skipping SSE write");
+      if (isConnectionClosed()) {
+        console.log("🛑 Connection closed, stopping SSE write");
         return false;
       }
       
@@ -309,236 +369,240 @@ Remember: Use the search tool before answering any Frappe-related questions.`,
         res.write(`data: ${JSON.stringify(data)}\n\n`);
         return true;
       } catch (error) {
-        console.error("SSE write error:", error);
-        isConnectionClosed = true;
+        console.error("❌ Error writing SSE:", error);
         return false;
       }
     };
 
+    const maxIterations = 5;
+    let iteration = 0;
+    let currentMessages: Message[] = [
+      ...conversationHistory,
+      { role: "user", content: message }
+    ];
+
     try {
-      console.log(`\n🤖 Processing message (streaming): "${userMessage}"`);
+      while (iteration < maxIterations) {
+        iteration++;
+        console.log(`🔄 Agent iteration ${iteration}`);
 
-      // Send initial status
-      if (!writeSSE('status', { message: 'Starting agent processing...' })) return;
+        if (isConnectionClosed()) {
+          console.log("🛑 Connection closed during iteration");
+          return;
+        }
 
-      // Build conversation with system prompt and trimmed history window
-      const trimmedHistory = this.trimHistoryForBudget(
-        conversationHistory,
-        userMessage
-      );
-      const messages: Message[] = [
-        {
-          role: "system",
-          content: `You are an expert Frappe Framework assistant. You help developers understand and use the Frappe framework effectively.
+        // Send status update
+        if (!writeSSE("status", { 
+          iteration, 
+          status: "thinking",
+          timestamp: new Date().toISOString()
+        })) return;
 
-Your capabilities:
-- You have access to the Frappe documentation through a search tool
-- You can search multiple variations of a query to find the best information
-- You provide accurate, helpful, and well-formatted answers
+        // Prepare search query for documentation
+        const searchQuery = this.prepareSearchQuery(message, currentMessages);
+        console.log(`🔍 Search query: "${searchQuery}"`);
 
-When answering:
-1. ALWAYS use the search_documentation tool to find relevant information
-2. Generate 3-5 different query variations to get comprehensive results
-3. Cite the documentation sources you found
-4. If you can't find information, say so clearly
-5. Be concise but thorough
+        // Search documentation
+        if (!writeSSE("tool_start", { 
+          tool: "search_documentation", 
+          query: searchQuery,
+          timestamp: new Date().toISOString()
+        })) return;
 
-Remember: Use the search tool before answering any Frappe-related questions.`,
-        },
-        ...trimmedHistory,
-        {
-          role: "user",
-          content: userMessage,
-        },
-      ];
+        const searchResults = await this.searchDocumentation(searchQuery);
+        
+        if (!writeSSE("tool_result", { 
+          tool: "search_documentation", 
+          results: searchResults,
+          timestamp: new Date().toISOString()
+        })) return;
 
-      // Create basic query variations immediately (no API call)
-      if (!writeSSE('status', { message: 'Preparing search queries...' })) return;
-      const expandedQueries = [
-        userMessage,
-        `What is ${userMessage.toLowerCase()}?`,
-        `How to ${userMessage.toLowerCase()}`,
-        `${userMessage} guide`,
-        `${userMessage} documentation`
-      ].filter((q, i, arr) => arr.indexOf(q) === i); // Remove duplicates
-      if (!writeSSE('status', { message: 'Search queries prepared' })) return;
+        // Prepare context for OpenAI
+        const systemMessage = this.buildSystemMessage(searchResults);
+        const streamMessages: Message[] = [
+          { role: "system", content: systemMessage },
+          ...currentMessages
+        ];
 
-      const allToolCalls: any[] = [];
-      let iterations = 0;
-      const MAX_ITERATIONS = 5;
+        console.log("🚀 Starting OpenAI streaming...");
 
-      // Agent loop - keep calling tools until agent responds with text
-      while (iterations < MAX_ITERATIONS) {
-        iterations++;
-        console.log(`🔄 Agent iteration ${iterations}`);
-
-        if (isConnectionClosed || onConnectionClosed()) return;
-
-        if (!writeSSE('status', { message: `Starting iteration ${iterations}...` })) return;
-
-        // Create streaming completion
+        // Create OpenAI stream using proper SDK v4 method
         const stream = await openai.chat.completions.create({
           model: "gpt-4o-mini",
-          messages: messages as any[],
-          tools: this.toolRegistry.getToolsForOpenAI(),
-          tool_choice: "auto",
-          temperature: 0.7,
-          max_tokens: AgentService.OUTPUT_TOKEN_BUDGET,
+          messages: streamMessages as any[],
+          temperature: 0.1,
+          max_tokens: 2000,
           stream: true,
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "search_documentation",
+                description: "Search the Frappe documentation for specific information",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    query: {
+                      type: "string",
+                      description: "The search query for documentation"
+                    }
+                  },
+                  required: ["query"]
+                }
+              }
+            }
+          ]
         });
 
-        let assistantMessage: any = { 
-          role: "assistant", 
-          content: "", 
-          tool_calls: [] 
-        };
+        let assistantMessage = "";
+        let toolCalls: any[] = [];
+        let currentToolCall: any = null;
 
-        // Process the streaming response
+        // Process stream using async iteration (proper OpenAI SDK v4 method)
         for await (const chunk of stream) {
-          if (isConnectionClosed || onConnectionClosed()) {
+          if (isConnectionClosed()) {
             console.log("🛑 Connection closed during OpenAI stream");
             return;
           }
 
-          const delta = chunk.choices[0]?.delta;
-          
-          // Stream content tokens
-          if (delta?.content) {
-            assistantMessage.content += delta.content;
-            if (!writeSSE('token', { content: delta.content })) return;
+          const choice = chunk.choices[0];
+          if (!choice) continue;
+
+          const delta = choice.delta;
+
+          // Handle content streaming
+          if (delta.content) {
+            assistantMessage += delta.content;
+            
+            // Send token to client
+            if (!writeSSE("delta", { 
+              content: delta.content,
+              timestamp: new Date().toISOString()
+            })) return;
           }
 
           // Handle tool calls
-          if (delta?.tool_calls) {
+          if (delta.tool_calls) {
             for (const toolCallDelta of delta.tool_calls) {
-              if (toolCallDelta.index !== undefined) {
-                // Initialize tool call if not exists
-                if (!assistantMessage.tool_calls[toolCallDelta.index]) {
-                  assistantMessage.tool_calls[toolCallDelta.index] = {
-                    id: toolCallDelta.id || "",
-                    type: "function",
-                    function: { name: "", arguments: "" }
-                  };
-                }
-                
-                const toolCall = assistantMessage.tool_calls[toolCallDelta.index];
-                if (toolCallDelta.id) toolCall.id = toolCallDelta.id;
-                if (toolCallDelta.function?.name) toolCall.function.name += toolCallDelta.function.name;
-                if (toolCallDelta.function?.arguments) toolCall.function.arguments += toolCallDelta.function.arguments;
+              const index = toolCallDelta.index;
+              
+              if (!toolCalls[index]) {
+                toolCalls[index] = {
+                  id: toolCallDelta.id || "",
+                  type: "function",
+                  function: {
+                    name: toolCallDelta.function?.name || "",
+                    arguments: ""
+                  }
+                };
+                currentToolCall = toolCalls[index];
+              }
+
+              if (toolCallDelta.function?.arguments) {
+                toolCalls[index].function.arguments += toolCallDelta.function.arguments;
               }
             }
           }
+
+          // Check for completion
+          if (choice.finish_reason === "stop") {
+            console.log("✅ OpenAI stream completed with stop reason");
+            break;
+          }
+
+          if (choice.finish_reason === "tool_calls") {
+            console.log("🔧 OpenAI stream completed with tool calls");
+            break;
+          }
         }
 
-        // Add assistant message to conversation
-        messages.push(assistantMessage as Message);
+        // Send completion signal
+        if (!writeSSE("completion", { 
+          content: assistantMessage,
+          finish_reason: "stop",
+          timestamp: new Date().toISOString()
+        })) return;
+
+        // Process tool calls if any
+        if (toolCalls.length > 0) {
+          console.log(`🔧 Processing ${toolCalls.length} tool calls`);
+          
+          // Add assistant message with tool calls
+          currentMessages.push({
+            role: "assistant",
+            content: assistantMessage,
+            tool_calls: toolCalls
+          });
+
+          // Execute tool calls
+          for (const toolCall of toolCalls) {
+            if (isConnectionClosed()) return;
+
+            if (toolCall.function.name === "search_documentation") {
+              try {
+                const args = JSON.parse(toolCall.function.arguments);
+                
+                if (!writeSSE("tool_start", { 
+                  tool: "search_documentation", 
+                  query: args.query,
+                  timestamp: new Date().toISOString()
+                })) return;
+
+                const results = await this.searchDocumentation(args.query);
+                
+                if (!writeSSE("tool_result", { 
+                  tool: "search_documentation", 
+                  results,
+                  timestamp: new Date().toISOString()
+                })) return;
+
+                // Add tool result to conversation
+                currentMessages.push({
+                  role: "tool",
+                  content: JSON.stringify(results),
+                  tool_call_id: toolCall.id
+                });
+
+              } catch (error) {
+                console.error("❌ Tool execution error:", error);
+                
+                if (!writeSSE("error", { 
+                  error: "Tool execution failed",
+                  details: error instanceof Error ? error.message : "Unknown error",
+                  timestamp: new Date().toISOString()
+                })) return;
+              }
+            }
+          }
+
+          // Continue to next iteration for tool response
+          continue;
+        }
 
         // If no tool calls, we're done
-        if (!assistantMessage.tool_calls || assistantMessage.tool_calls.length === 0) {
-          console.log(`✅ Agent completed with ${iterations} iterations - no more tool calls`);
-          
-          if (!writeSSE('status', { message: 'Agent processing completed' })) return;
-          
-          // Send final metadata
-          if (!writeSSE('meta', { 
-            toolCalls: allToolCalls,
-            timestamp: new Date().toISOString(),
-            iterations: iterations
-          })) return;
+        currentMessages.push({
+          role: "assistant",
+          content: assistantMessage
+        });
 
-          // Send completion signal
-          if (!writeSSE('done', { 
-            conversationHistory: messages,
-            finalResponse: assistantMessage.content || "I apologize, but I was unable to generate a response."
-          })) return;
-
-          return;
-        }
-
-        // Execute tool calls
-        if (!writeSSE('status', { message: `Executing ${assistantMessage.tool_calls.length} tool(s)...` })) return;
-
-        for (const toolCall of assistantMessage.tool_calls) {
-          if (isConnectionClosed || onConnectionClosed()) return;
-
-          console.log(`🔧 Tool call: ${toolCall.function.name}`);
-          allToolCalls.push(toolCall);
-
-          try {
-            let args = JSON.parse(toolCall.function.arguments);
-
-            // If the tool is search_documentation and we have expanded queries, use them
-            if (toolCall.function.name === "search_documentation") {
-              if (!args.queries || args.queries.length === 0) {
-                args.queries = expandedQueries;
-              }
-            }
-
-            if (!writeSSE('tool_start', { 
-              toolName: toolCall.function.name,
-              toolId: toolCall.id
-            })) return;
-
-            const toolResult = await this.toolRegistry.executeTool(
-              toolCall.function.name,
-              args
-            );
-
-            if (isConnectionClosed || onConnectionClosed()) return;
-
-            if (!writeSSE('tool_result', { 
-              toolName: toolCall.function.name,
-              toolId: toolCall.id,
-              success: true 
-            })) return;
-
-            // Add tool response to conversation
-            messages.push({
-              role: "tool",
-              content: JSON.stringify(this.sanitizeToolResult(toolResult)),
-              tool_call_id: toolCall.id,
-            });
-
-          } catch (error) {
-            console.error(`Error executing tool ${toolCall.function.name}:`, error);
-            
-            if (!writeSSE('tool_result', { 
-              toolName: toolCall.function.name,
-              toolId: toolCall.id,
-              success: false,
-              error: error instanceof Error ? error.message : "Unknown error"
-            })) return;
-
-            messages.push({
-              role: "tool",
-              content: JSON.stringify({
-                success: false,
-                error: error instanceof Error ? error.message : "Unknown error",
-              }),
-              tool_call_id: toolCall.id,
-            });
-          }
-        }
+        console.log("✅ Agent processing completed successfully");
+        break;
       }
 
-      // Max iterations reached
-      if (iterations >= MAX_ITERATIONS) {
-        console.warn("⚠️ Max iterations reached");
-        if (!writeSSE('warning', { message: 'Max iterations reached' })) return;
-        
-        if (!writeSSE('done', { 
-          conversationHistory: messages,
-          finalResponse: "I apologize, but I reached the maximum number of iterations while processing your request."
-        })) return;
-      }
+      // Send final completion
+      if (!writeSSE("done", { 
+        message: "Stream completed",
+        timestamp: new Date().toISOString()
+      })) return;
 
     } catch (error) {
-      console.error("Agent streaming error:", error);
-      if (!isConnectionClosed && !onConnectionClosed()) {
-        writeSSE('error', { 
-          error: `Agent processing failed: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }` 
+      console.error("❌ Error in processMessageStream:", error);
+      
+      if (!isConnectionClosed()) {
+        writeSSE("error", { 
+          error: "Processing failed",
+          details: error instanceof Error ? error.message : "Unknown error",
+          timestamp: new Date().toISOString()
         });
       }
     }
