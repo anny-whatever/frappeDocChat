@@ -8,14 +8,19 @@ export function Navigation() {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="border-b bg-card">
+    <nav className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container flex gap-4 items-center px-4 py-3 mx-auto max-w-6xl">
-        <div className="flex gap-1 items-center mr-auto">
-          <span className="text-xl font-bold">Frappe</span>
-          <span className="text-xl font-bold text-primary">DocChat</span>
+        <div className="flex gap-2 items-center mr-auto">
+          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary text-primary-foreground">
+            <MessageCircle className="w-4 h-4" />
+          </div>
+          <span className="text-lg font-semibold tracking-tight">Frappe</span>
+          <span className="text-lg font-semibold tracking-tight text-primary">
+            DocChat
+          </span>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             asChild
             variant={isActive("/search") ? "default" : "ghost"}

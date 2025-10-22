@@ -1,27 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import {
-  MessageCircle,
-  Send,
-  Bot,
-  User,
-  Loader2,
-  Database,
-  AlertCircle,
-} from "lucide-react";
+import { Send, Bot, User, Loader2, Database, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+// card imports removed (unused)
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChat, useHealth, useStats } from "../hooks/useApi";
 import type { Message } from "../services/api";
+import { apiService } from "../services/api";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -41,6 +28,10 @@ export function ChatPage() {
   const { data: health } = useHealth();
   const { data: stats } = useStats();
 
+  // Streaming state
+  const [isStreaming, setIsStreaming] = useState(false);
+  const streamAbortRef = useRef<{ abort: () => void } | null>(null);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -50,7 +41,7 @@ export function ChatPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim() || chatMutation.isPending) return;
+    if (!inputMessage.trim() || chatMutation.isPending || isStreaming) return;
 
     const userMessage: ChatMessage = {
       role: "user",
@@ -61,30 +52,114 @@ export function ChatPage() {
     setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
 
-    try {
-      const response = await chatMutation.mutateAsync({
-        message: inputMessage.trim(),
-        conversationHistory: conversationHistory,
+    // Prepare assistant placeholder for streaming
+    setIsStreaming(true);
+    let assistantIndex = -1;
+    setMessages((prev) => {
+      assistantIndex = prev.length;
+      return [
+        ...prev,
+        {
+          role: "assistant",
+          content: "...", // show typing dots to avoid empty bubble
+          timestamp: new Date(),
+        },
+      ];
+    });
+
+    const onDelta = (delta: string) => {
+      setMessages((prev) => {
+        const next = [...prev];
+        const idx = assistantIndex >= 0 ? assistantIndex : next.length - 1;
+        next[idx] = {
+          ...next[idx],
+          content: (next[idx]?.content || "") + delta,
+        } as ChatMessage;
+        return next;
+      });
+    };
+
+    const onMeta = (meta: { toolCalls?: any[] }) => {
+      setMessages((prev) => {
+        const next = [...prev];
+        const idx = assistantIndex >= 0 ? assistantIndex : next.length - 1;
+        next[idx] = {
+          ...next[idx],
+          toolCalls: meta.toolCalls || [],
+        } as ChatMessage;
+        return next;
+      });
+    };
+
+    const onDone = (payload: { conversationHistory: Message[] }) => {
+      setConversationHistory(payload.conversationHistory);
+      setIsStreaming(false);
+      streamAbortRef.current = null;
+    };
+
+    const onError = (err: Error) => {
+      console.error("Stream error:", err);
+      setIsStreaming(false);
+      streamAbortRef.current = null;
+
+      // Update the existing assistant placeholder with an error or fallback content
+      setMessages((prev) => {
+        const next = [...prev];
+        const idx = assistantIndex >= 0 ? assistantIndex : next.length - 1;
+        if (idx >= 0 && next[idx]) {
+          next[idx] = {
+            ...next[idx],
+            content: "I encountered an error. Trying fallback...",
+          } as ChatMessage;
+        }
+        return next;
       });
 
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        content: response.message,
-        timestamp: new Date(),
-        toolCalls: response.toolCalls,
-      };
+      // Fallback to non-streaming chat to avoid a dead end when stream fails (e.g., 404 if server not reloaded)
+      void chatMutation
+        .mutateAsync({
+          message: userMessage.content,
+          conversationHistory: conversationHistory,
+        })
+        .then((response) => {
+          setMessages((prev) => {
+            const next = [...prev];
+            const idx = assistantIndex >= 0 ? assistantIndex : next.length - 1;
+            if (idx >= 0 && next[idx]) {
+              next[idx] = {
+                role: "assistant",
+                content: response.message,
+                timestamp: new Date(),
+                toolCalls: response.toolCalls,
+              } as ChatMessage;
+            }
+            return next;
+          });
+          setConversationHistory(response.conversationHistory);
+        })
+        .catch(() => {
+          setMessages((prev) => {
+            const next = [...prev];
+            const idx = assistantIndex >= 0 ? assistantIndex : next.length - 1;
+            if (idx >= 0 && next[idx]) {
+              next[idx] = {
+                ...next[idx],
+                content: "I encountered an error. Please try again.",
+              } as ChatMessage;
+            }
+            return next;
+          });
+        });
+    };
 
-      setMessages((prev) => [...prev, assistantMessage]);
-      setConversationHistory(response.conversationHistory);
-    } catch (error) {
-      console.error("Chat failed:", error);
-      const errorMessage: ChatMessage = {
-        role: "assistant",
-        content: "I apologize, but I encountered an error. Please try again.",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    }
+    const streamCtrl = apiService.chatStream(
+      {
+        message: userMessage.content,
+        conversationHistory,
+      },
+      { onDelta, onMeta, onDone, onError }
+    );
+    streamAbortRef.current = streamCtrl;
 
     // Focus back on input
     inputRef.current?.focus();
@@ -101,17 +176,12 @@ export function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-[calc(100vh-60px)] bg-background">
       {/* Header */}
-      <div className="border-b bg-card">
-        <div className="container px-4 py-4 mx-auto max-w-6xl">
+      <div className="bg-card">
+        <div className="container py-1 mx-auto max-w-6xl">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">Frappe AI Assistant</h1>
-              <p className="text-sm text-muted-foreground">
-                Powered by GPT-4o-mini with Agentic RAG
-              </p>
-            </div>
+            <div></div>
 
             {/* Status indicators */}
             <div className="flex gap-2">
@@ -130,9 +200,12 @@ export function ChatPage() {
       </div>
 
       {/* Chat Messages Area */}
-      <div className="flex-1 overflow-hidden">
-        <div className="container px-4 mx-auto h-full max-w-4xl">
-          <ScrollArea className="h-full py-6" ref={scrollAreaRef}>
+      <div className="overflow-hidden flex-1">
+        <div className="container px-4 mx-auto max-w-4xl h-full">
+          <ScrollArea
+            className="h-[calc(100vh-200px)] py-6"
+            ref={scrollAreaRef}
+          >
             {messages.length === 0 ? (
               <div className="flex flex-col justify-center items-center h-full text-center">
                 <Bot className="mb-4 w-16 h-16 text-muted-foreground" />
@@ -231,7 +304,7 @@ export function ChatPage() {
                 ))}
 
                 {/* Loading indicator */}
-                {chatMutation.isPending && (
+                {chatMutation.isPending && !isStreaming && (
                   <div className="flex gap-3 justify-start">
                     <div className="flex-shrink-0">
                       <div className="flex justify-center items-center w-8 h-8 rounded-full bg-primary text-primary-foreground">
@@ -274,15 +347,17 @@ export function ChatPage() {
               placeholder="Ask me anything about Frappe framework..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              disabled={chatMutation.isPending}
+              disabled={chatMutation.isPending || isStreaming}
               className="flex-1"
             />
             <Button
               type="submit"
-              disabled={!inputMessage.trim() || chatMutation.isPending}
+              disabled={
+                !inputMessage.trim() || chatMutation.isPending || isStreaming
+              }
               className="px-6"
             >
-              {chatMutation.isPending ? (
+              {chatMutation.isPending || isStreaming ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
@@ -295,8 +370,13 @@ export function ChatPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={clearChat}
-                disabled={chatMutation.isPending}
+                onClick={() => {
+                  // stop any active stream and clear
+                  if (streamAbortRef.current) streamAbortRef.current.abort();
+                  setIsStreaming(false);
+                  clearChat();
+                }}
+                disabled={chatMutation.isPending || isStreaming}
               >
                 Clear
               </Button>

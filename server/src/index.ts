@@ -172,6 +172,86 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
+// Chat streaming endpoint (SSE-style)
+app.post("/api/chat/stream", async (req, res) => {
+  try {
+    const { message, conversationHistory = [] } = req.body;
+
+    if (!message || typeof message !== "string") {
+      res
+        .status(400)
+        .json({ error: "Message is required and must be a string" });
+      return;
+    }
+    if (message.trim().length === 0) {
+      res.status(400).json({ error: "Message cannot be empty" });
+      return;
+    }
+
+    // Set headers for server-sent events
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+
+    // Helpful for proxies (Heroku, etc.) to flush data
+    // @ts-expect-error flushHeaders exists in Node's ServerResponse
+    if (typeof res.flushHeaders === "function") res.flushHeaders();
+
+    const writeEvent = (event: string, data: any) => {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    let clientClosed = false;
+    req.on("close", () => {
+      clientClosed = true;
+    });
+
+    // Process the message fully via agent, then stream chunks of the result
+    const agentResponse = await agentService.processMessage(
+      message,
+      conversationHistory as Message[]
+    );
+
+    const finalText: string = agentResponse.response || "";
+    const chunkSize = 64; // characters per chunk for smoother UI
+    for (let i = 0; i < finalText.length && !clientClosed; i += chunkSize) {
+      const delta = finalText.slice(i, i + chunkSize);
+      writeEvent("message", { delta });
+    }
+
+    // Send tool calls metadata (if any)
+    writeEvent("meta", {
+      toolCalls: agentResponse.toolCalls || [],
+      timestamp: new Date().toISOString(),
+    });
+
+    // Signal completion with updated conversation history
+    writeEvent("done", {
+      conversationHistory: agentResponse.conversationHistory,
+    });
+
+    res.end();
+  } catch (error) {
+    // If headers already sent (stream started), emit error event; else JSON error
+    if (res.headersSent) {
+      res.write(`event: error\n`);
+      res.write(
+        `data: ${JSON.stringify({
+          error: "Internal server error during chat",
+          message: error instanceof Error ? error.message : "Unknown error",
+        })}\n\n`
+      );
+      res.end();
+    } else {
+      res.status(500).json({
+        error: "Internal server error during chat",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+});
+
 // Error handling middleware
 app.use(
   (
