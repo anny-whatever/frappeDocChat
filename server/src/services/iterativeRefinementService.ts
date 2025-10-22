@@ -108,7 +108,12 @@ Respond in JSON format:
 
     try {
       const response = await this.llm.invoke(prompt);
-      const analysis = JSON.parse(response.content as string);
+      let content = response.content as string;
+      
+      // Clean up the response - remove markdown code blocks if present
+      content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      
+      const analysis = JSON.parse(content);
       
       return {
         informationGaps: analysis.informationGaps || [],
