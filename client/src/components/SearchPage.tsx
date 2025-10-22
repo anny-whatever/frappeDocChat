@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Search, FileText, Clock, Database, AlertCircle, ExternalLink } from 'lucide-react';
+import { Search, FileText, Clock, Database, AlertCircle, ExternalLink, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useSearch, useStats, useHealth } from '../hooks/useApi';
 import type { SearchResult } from '../services/api';
 
@@ -13,6 +14,8 @@ export function SearchPage() {
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const searchMutation = useSearch();
   const { data: stats } = useStats();
@@ -41,12 +44,48 @@ export function SearchPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    try {
+      // Handle various date formats and invalid dates
+      if (!dateString || dateString === 'Invalid Date') {
+        return 'Unknown date';
+      }
+      
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Unknown date';
+      }
+      
+      return date.toLocaleDateString();
+    } catch (error) {
+      return 'Unknown date';
+    }
   };
 
   const truncateContent = (content: string, maxLength: number = 300) => {
     if (content.length <= maxLength) return content;
     return content.substring(0, maxLength) + '...';
+  };
+
+  const openModal = (result: SearchResult) => {
+    setSelectedResult(result);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedResult(null);
+  };
+
+  const generateDocsUrl = (result: SearchResult) => {
+    // Use sourceUrl if available, otherwise construct from filename
+    if (result.sourceUrl) {
+      return result.sourceUrl;
+    }
+    
+    // Fallback: construct URL from filename
+    const baseUrl = 'https://docs.frappe.io/';
+    const cleanFilename = result.filename.replace(/^framework_/, '').replace(/\.json$/, '').replace(/_/g, '/');
+    return `${baseUrl}${cleanFilename}`;
   };
 
   return (
@@ -175,10 +214,7 @@ export function SearchPage() {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <CardTitle className="text-lg mb-2">
-                          {result.title || result.filename}
-                        </CardTitle>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                           <span className="flex items-center gap-1">
                             <FileText className="w-3 h-3" />
                             {result.filename}
@@ -195,24 +231,38 @@ export function SearchPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm leading-relaxed">
+                    <p className="text-sm leading-relaxed mb-4">
                       {truncateContent(result.content)}
                     </p>
                     
-                    {/* Source Link */}
-                    {result.sourceUrl && (
-                      <div className="mt-3 pt-3 border-t">
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2 pt-3 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openModal(result)}
+                        className="flex items-center gap-1"
+                      >
+                        <Eye className="w-3 h-3" />
+                        View Full Content
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="flex items-center gap-1"
+                      >
                         <a
-                          href={result.sourceUrl}
+                          href={generateDocsUrl(result)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 hover:underline"
                         >
                           <ExternalLink className="w-3 h-3" />
-                          View in Frappe Documentation
+                          View in Docs
                         </a>
-                      </div>
-                    )}
+                      </Button>
+                    </div>
                     
                     {result.metadata && Object.keys(result.metadata).length > 0 && (
                       <div className="mt-3 pt-3 border-t">
@@ -246,6 +296,70 @@ export function SearchPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Modal for Full Content */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              {selectedResult?.filename}
+            </DialogTitle>
+            <DialogDescription className="flex items-center gap-4 text-sm">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {selectedResult && formatDate(selectedResult.createdAt)}
+              </span>
+              <Badge variant="outline">
+                {selectedResult && formatSimilarity(selectedResult.similarity)} match
+              </Badge>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="prose prose-sm max-w-none">
+              <pre className="whitespace-pre-wrap text-sm leading-relaxed bg-muted p-4 rounded-lg">
+                {selectedResult?.content}
+              </pre>
+            </div>
+            
+            {/* Modal Action Buttons */}
+            <div className="flex items-center gap-2 pt-4 border-t">
+              <Button
+                variant="default"
+                asChild
+                className="flex items-center gap-1"
+              >
+                <a
+                  href={selectedResult ? generateDocsUrl(selectedResult) : '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  View in Frappe Documentation
+                </a>
+              </Button>
+              
+              <Button variant="outline" onClick={closeModal}>
+                Close
+              </Button>
+            </div>
+            
+            {selectedResult?.metadata && Object.keys(selectedResult.metadata).length > 0 && (
+              <div className="pt-4 border-t">
+                <h4 className="text-sm font-medium mb-2">Metadata</h4>
+                <div className="flex flex-wrap gap-1">
+                  {Object.entries(selectedResult.metadata).map(([key, value]) => (
+                    <Badge key={key} variant="secondary" className="text-xs">
+                      {key}: {String(value)}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
