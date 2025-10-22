@@ -52,17 +52,17 @@ class DocumentProcessor {
       }
 
       // Only process JSON files
-      if (!filename.endsWith('.json')) {
+      if (!filename.endsWith(".json")) {
         console.log(`Skipping non-JSON file: ${filename}`);
         return null;
       }
 
       try {
         const documentData = JSON.parse(fileContent);
-        
+
         // Extract content from JSON
-        const content = documentData.content || '';
-        
+        const content = documentData.content || "";
+
         if (!content.trim()) {
           console.log(`Skipping JSON file with empty content: ${filename}`);
           return null;
