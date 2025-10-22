@@ -32,3 +32,39 @@ model Document {
   @@index([filename])
   @@map("documents")
 }
+
+model Conversation {
+  id          String   @id @default(cuid())
+  title       String?
+  userId      String?  // For future user management
+  metadata    Json?    // Store additional conversation metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  messages    Message[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("conversations")
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  conversationId  String
+  role            String   // "user", "assistant", "system", "function", "tool"
+  content         String?
+  name            String?  // For function/tool calls
+  toolCalls       Json?    // Store tool calls data
+  toolCallId      String?  // For tool responses
+  metadata        Json?    // Additional message metadata
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
+  @@map("messages")
+}

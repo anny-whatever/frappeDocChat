@@ -1,10 +1,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { EmbeddingService } from "./services/embeddingService.ts";
-import { DatabaseService } from "./services/databaseService.ts";
-import { AgentService } from "./agents/agentService.ts";
-import type { Message } from "./agents/agentService.ts";
+import { EmbeddingService } from "./services/embeddingService.js";
+import { DatabaseService } from "./services/databaseService.js";
+import { AgentService } from "./services/agentService.js";
+import { ConversationService } from "./services/conversationService.js";
 
 dotenv.config();
 
@@ -24,6 +24,7 @@ app.use(express.json());
 const embeddingService = EmbeddingService.getInstance();
 const databaseService = DatabaseService.getInstance();
 const agentService = AgentService.getInstance();
+const conversationService = ConversationService.getInstance();
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -136,7 +137,7 @@ app.get("/api/stats", async (req, res) => {
 // Chat endpoint - Agentic RAG Chat
 app.post("/api/chat", async (req, res) => {
   try {
-    const { message, conversationHistory = [] } = req.body;
+    const { message, conversationId } = req.body;
 
     if (!message || typeof message !== "string") {
       return res.status(400).json({
@@ -153,15 +154,16 @@ app.post("/api/chat", async (req, res) => {
     console.log(`💬 Chat request: "${message}"`);
 
     // Process message through agent
-    const agentResponse = await agentService.processMessage(
+    const agentResponse = await agentService.processMessage({
       message,
-      conversationHistory as Message[]
-    );
+      conversationId,
+      userId: "default", // Use default userId since we don't have user-based implementation
+    });
 
     res.json({
       message: agentResponse.response,
-      toolCalls: agentResponse.toolCalls,
-      conversationHistory: agentResponse.conversationHistory,
+      conversationId: agentResponse.conversationId,
+      sources: agentResponse.sources,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -174,126 +176,151 @@ app.post("/api/chat", async (req, res) => {
 });
 
 // Test SSE endpoint
-app.get("/api/test-stream", (req, res) => {
-  res.writeHead(200, {
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    Connection: "keep-alive",
-    "Access-Control-Allow-Origin": "*",
-  });
 
-  let counter = 0;
-  const interval = setInterval(() => {
-    counter++;
-    res.write(`event: test\n`);
-    res.write(`data: {"message": "Test message ${counter}"}\n\n`);
-    
-    if (counter >= 5) {
-      res.write(`event: done\n`);
-      res.write(`data: {"message": "Test completed"}\n\n`);
-      clearInterval(interval);
-      res.end();
-    }
-  }, 1000);
 
-  req.on("close", () => {
-    clearInterval(interval);
-  });
-});
 
-// SSE-style streaming endpoint
-app.post("/api/chat/stream", async (req, res) => {
-  console.log("\n🌊 Starting streaming chat endpoint");
-  
-  // Set SSE headers
-  res.writeHead(200, {
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    "Connection": "keep-alive",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
-  });
 
-  let connectionClosed = false;
+// Conversation management endpoints
 
-  // Handle client disconnect
-  req.on("close", () => {
-    console.log("🔌 Client disconnected from stream");
-    connectionClosed = true;
-  });
-
-  req.on("error", (error) => {
-    console.error("🚨 Request error:", error);
-    connectionClosed = true;
-  });
-
-  // Handle response errors
-  res.on("error", (error) => {
-    console.error("🚨 Response error:", error);
-    connectionClosed = true;
-  });
-
-  res.on("close", () => {
-    console.log("🔌 Response stream closed");
-    connectionClosed = true;
-  });
-
-  // Connection check function - returns true if connection is closed
-  const isConnectionClosed = () => connectionClosed;
-
+// Get all conversations for a user
+app.get("/api/conversations", async (req, res) => {
   try {
-    const { message, conversationHistory = [] } = req.body;
+    const { limit = 50 } = req.query;
 
-    if (!message) {
-      if (!connectionClosed) {
-        res.write(`event: error\n`);
-        res.write(`data: ${JSON.stringify({ error: "Message is required" })}\n\n`);
-        res.end();
-      }
-      return;
-    }
-
-    console.log(`📨 Received message: "${message}"`);
-
-    // Send initial heartbeat
-    if (!connectionClosed) {
-      res.write(`event: heartbeat\n`);
-      res.write(`data: ${JSON.stringify({ timestamp: new Date().toISOString() })}\n\n`);
-    }
-
-    // Start agent streaming
-    await agentService.processMessageStream(
-      message,
-      conversationHistory,
-      res,
-      isConnectionClosed
+    const conversations = await conversationService.getConversations(
+      undefined, // No userId filtering - fetch all conversations
+      parseInt(limit as string)
     );
 
-    console.log("✅ Stream completed successfully");
-    
+    res.json({
+      conversations,
+      count: conversations.length,
+      timestamp: new Date().toISOString(),
+    });
   } catch (error) {
-    console.error("🚨 Stream error:", error);
-    
-    if (!connectionClosed) {
-      try {
-        res.write(`event: error\n`);
-        res.write(`data: ${JSON.stringify({ 
-          error: error instanceof Error ? error.message : "Unknown error" 
-        })}\n\n`);
-      } catch (writeError) {
-        console.error("❌ Error writing error response:", writeError);
-      }
+    console.error("Error fetching conversations:", error);
+    res.status(500).json({
+      error: "Internal server error while fetching conversations",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+// Get a specific conversation with messages
+app.get("/api/conversations/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const conversation = await conversationService.getConversation(id);
+
+    if (!conversation) {
+      return res.status(404).json({
+        error: "Conversation not found",
+      });
     }
-  } finally {
-    if (!connectionClosed) {
-      try {
-        res.write(`event: end\n`);
-        res.write(`data: ${JSON.stringify({ timestamp: new Date().toISOString() })}\n\n`);
-        res.end();
-      } catch (endError) {
-        console.error("❌ Error ending response:", endError);
-      }
+
+    res.json({
+      conversation,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error fetching conversation:", error);
+    res.status(500).json({
+      error: "Internal server error while fetching conversation",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+// Create a new conversation
+app.post("/api/conversations", async (req, res) => {
+  try {
+    const { title, metadata } = req.body;
+
+    const conversation = await conversationService.createConversation({
+      title,
+      userId: "default", // Use default userId since we don't have user-based implementation
+      metadata,
+    });
+
+    res.status(201).json({
+      conversation,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error creating conversation:", error);
+    res.status(500).json({
+      error: "Internal server error while creating conversation",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+// Update conversation title
+app.patch("/api/conversations/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title } = req.body;
+
+    if (!title || typeof title !== "string") {
+      return res.status(400).json({
+        error: "Title is required and must be a string",
+      });
     }
+
+    const updatedConversation = await conversationService.updateConversationTitle(id, title);
+
+    res.json({
+      conversation: updatedConversation,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error updating conversation:", error);
+    res.status(500).json({
+      error: "Internal server error while updating conversation",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+// Delete a conversation
+app.delete("/api/conversations/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await conversationService.deleteConversation(id);
+
+    res.json({
+      message: "Conversation deleted successfully",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error deleting conversation:", error);
+    res.status(500).json({
+      error: "Internal server error while deleting conversation",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+// Get conversation history (messages only)
+app.get("/api/conversations/:id/history", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const history = await conversationService.getConversationHistory(id);
+
+    res.json({
+      history,
+      count: history.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error fetching conversation history:", error);
+    res.status(500).json({
+      error: "Internal server error while fetching conversation history",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 });
 

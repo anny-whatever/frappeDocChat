@@ -81,23 +81,58 @@ export interface HealthResponse {
 }
 
 export interface Message {
+  id: string;
+  conversationId: string;
   role: "system" | "user" | "assistant" | "function" | "tool";
   content: string | null;
   name?: string;
-  tool_calls?: any[];
-  tool_call_id?: string;
+  toolCalls?: any[];
+  toolCallId?: string;
+  metadata?: any;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ChatRequest {
   message: string;
-  conversationHistory?: Message[];
+  conversationId?: string;
+  userId?: string;
 }
 
 export interface ChatResponse {
   message: string;
-  toolCalls: any[];
-  conversationHistory: Message[];
+  conversationId: string;
+  sources?: Array<{
+    id: string;
+    title: string;
+    content: string;
+    similarity: number;
+    sourceUrl?: string;
+  }>;
   timestamp: string;
+}
+
+export interface Conversation {
+  id: string;
+  userId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversationWithMessages extends Conversation {
+  messages: Message[];
+}
+
+export interface ConversationData {
+  userId?: string;
+  title: string;
+}
+
+export interface MessageData {
+  conversationId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
 }
 
 export const apiService = {
@@ -145,127 +180,42 @@ export const apiService = {
     return response.data;
   },
 
-  // Chat streaming (SSE over fetch)
-  chatStream(
-    request: ChatRequest,
-    handlers: {
-      onDelta?: (delta: string) => void;
-      onMeta?: (meta: { toolCalls?: any[]; timestamp?: string; iterations?: number }) => void;
-      onDone?: (payload: { conversationHistory: Message[]; finalResponse?: string }) => void;
-      onError?: (err: Error) => void;
-      onStatus?: (status: { message: string }) => void;
-      onToolStart?: (tool: { toolName: string; toolId: string }) => void;
-      onToolResult?: (result: { toolName: string; toolId: string; success: boolean; error?: string }) => void;
-      onWarning?: (warning: { message: string }) => void;
-    }
-  ): { abort: () => void } {
-    const controller = new AbortController();
-    const url = `${API_BASE_URL}/api/chat/stream`;
-
-    (async () => {
-      try {
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(request),
-          signal: controller.signal,
-        });
-        if (!resp.ok || !resp.body) {
-          throw new Error(`Stream HTTP ${resp.status}`);
-        }
-
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        const processBuffer = () => {
-          // Parse text/event-stream framing
-          const parts = buffer.split("\n\n");
-          // keep last incomplete part in buffer
-          buffer = parts.pop() || "";
-          for (const part of parts) {
-            if (part.trim() === "" || part.startsWith(":")) {
-              // Skip empty parts and comments (heartbeat)
-              continue;
-            }
-            
-            const lines = part.split("\n");
-            let event: string | null = null;
-            let data: string | null = null;
-            for (const line of lines) {
-              if (line.startsWith("event:")) {
-                event = line.slice(6).trim();
-              } else if (line.startsWith("data:")) {
-                data = line.slice(5).trim();
-              }
-            }
-            if (!event || data == null) continue;
-            
-            try {
-              const parsed = JSON.parse(data);
-              console.log("Stream event:", event, "data:", parsed);
-              
-              switch (event) {
-                case "delta":
-                  handlers.onDelta?.(parsed.delta || "");
-                  break;
-                case "status":
-                  handlers.onStatus?.(parsed);
-                  break;
-                case "tool_start":
-                  handlers.onToolStart?.(parsed);
-                  break;
-                case "tool_result":
-                  handlers.onToolResult?.(parsed);
-                  break;
-                case "warning":
-                  handlers.onWarning?.(parsed);
-                  break;
-                case "meta":
-                  handlers.onMeta?.(parsed);
-                  break;
-                case "done":
-                  handlers.onDone?.(parsed);
-                  break;
-                case "error":
-                  handlers.onError?.(new Error(parsed.error || "Stream error"));
-                  break;
-                default:
-                  console.log("Unknown stream event:", event, parsed);
-              }
-            } catch (e) {
-              console.error("Stream parse error:", e, "data:", data);
-              // swallow parse errors, but surface via onError if desired
-            }
-          }
-        };
-
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          processBuffer();
-        }
-
-        // flush any remaining buffered data
-        if (buffer.length > 0) {
-          processBuffer();
-        }
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          console.log("Stream aborted by user");
-        } else {
-          handlers.onError?.(err as Error);
-        }
-      }
-    })();
-
-    return {
-      abort: () => controller.abort(),
-    };
+  // Conversation management
+  async getConversations(): Promise<Conversation[]> {
+    const response = await api.get<{conversations: Conversation[], count: number, timestamp: string}>(`/api/conversations`);
+    return response.data.conversations;
   },
+
+  async getConversation(conversationId: string): Promise<ConversationWithMessages> {
+    const response = await api.get<{conversation: ConversationWithMessages, timestamp: string}>(`/api/conversations/${conversationId}`);
+    return response.data.conversation;
+  },
+
+  async createConversation(data: ConversationData): Promise<Conversation> {
+    const response = await api.post<{conversation: Conversation, timestamp: string}>("/api/conversations", data);
+    return response.data.conversation;
+  },
+
+  async updateConversation(conversationId: string, data: { title: string }): Promise<Conversation> {
+    const response = await api.patch<{conversation: Conversation, timestamp: string}>(`/api/conversations/${conversationId}`, data);
+    return response.data.conversation;
+  },
+
+  async deleteConversation(conversationId: string): Promise<void> {
+    await api.delete(`/api/conversations/${conversationId}`);
+  },
+
+  async getConversationHistory(conversationId: string): Promise<Message[]> {
+    const response = await api.get<{
+      history: Message[];
+      count: number;
+      timestamp: string;
+    }>(`/api/conversations/${conversationId}/history`);
+    return response.data.history;
+  },
+
+  // Chat streaming (SSE over fetch)
+
 };
 
 export default apiService;

@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2, Database, AlertCircle } from "lucide-react";
+import { Send, Bot, User, Loader2, Database, AlertCircle, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// card imports removed (unused)
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChat, useHealth, useStats } from "../hooks/useApi";
-import type { Message } from "../services/api";
+import type { Message, ConversationWithMessages } from "../services/api";
 import { apiService } from "../services/api";
+import { ConversationSidebar } from "./ConversationSidebar";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -21,6 +21,9 @@ export function ChatPage() {
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [refreshSidebar, setRefreshSidebar] = useState(0);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -28,9 +31,8 @@ export function ChatPage() {
   const { data: health } = useHealth();
   const { data: stats } = useStats();
 
-  // Streaming state
-  const [isStreaming, setIsStreaming] = useState(false);
-  const streamAbortRef = useRef<{ abort: () => void } | null>(null);
+  // Loading state for API calls
+  const [isLoading, setIsLoading] = useState(false);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -39,9 +41,39 @@ export function ChatPage() {
     }
   }, [messages]);
 
+  // Load conversation when selected
+  const loadConversation = async (conversationId: string) => {
+    try {
+      const conversation = await apiService.getConversation(conversationId);
+      const chatMessages: ChatMessage[] = conversation.messages.map(msg => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content || "",
+        timestamp: new Date(msg.createdAt),
+        toolCalls: msg.toolCalls,
+      }));
+      
+      setMessages(chatMessages);
+      setConversationHistory(conversation.messages);
+      setCurrentConversationId(conversationId);
+    } catch (error) {
+      console.error("Failed to load conversation:", error);
+    }
+  };
+
+  const handleConversationSelect = (conversationId: string) => {
+    loadConversation(conversationId);
+  };
+
+  const handleNewConversation = () => {
+    setMessages([]);
+    setConversationHistory([]);
+    setCurrentConversationId(null);
+    setInputMessage("");
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim() || chatMutation.isPending || isStreaming) return;
+    if (!inputMessage.trim() || chatMutation.isPending || isLoading) return;
 
     const userMessage: ChatMessage = {
       role: "user",
@@ -51,124 +83,43 @@ export function ChatPage() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
+    setIsLoading(true);
 
-    // Prepare assistant placeholder for streaming
-    setIsStreaming(true);
-    let assistantIndex = -1;
-    let isFirstDelta = true;
-    setMessages((prev) => {
-      assistantIndex = prev.length;
-      return [
-        ...prev,
-        {
-          role: "assistant",
-          content: "...", // show typing dots to avoid empty bubble
-          timestamp: new Date(),
-        },
-      ];
-    });
-
-    const onDelta = (delta: string) => {
-      console.log("onDelta called with:", delta, "isFirstDelta:", isFirstDelta);
-      setMessages((prev) => {
-        const next = [...prev];
-        const idx = assistantIndex >= 0 ? assistantIndex : next.length - 1;
-        console.log("Current content before update:", next[idx]?.content);
-        next[idx] = {
-          ...next[idx],
-          content: isFirstDelta ? delta : (next[idx]?.content || "") + delta,
-        } as ChatMessage;
-        console.log("New content after update:", next[idx]?.content);
-        isFirstDelta = false;
-        return next;
-      });
-    };
-
-    const onMeta = (meta: { toolCalls?: any[] }) => {
-      setMessages((prev) => {
-        const next = [...prev];
-        const idx = assistantIndex >= 0 ? assistantIndex : next.length - 1;
-        next[idx] = {
-          ...next[idx],
-          toolCalls: meta.toolCalls || [],
-        } as ChatMessage;
-        return next;
-      });
-    };
-
-    const onDone = (payload: { conversationHistory: Message[] }) => {
-      console.log("onDone called with payload:", payload);
-      setConversationHistory(payload.conversationHistory);
-      setIsStreaming(false);
-      streamAbortRef.current = null;
-    };
-
-    const onError = (err: Error) => {
-      console.error("Stream error:", err);
-      setIsStreaming(false);
-      streamAbortRef.current = null;
-
-      // Update the existing assistant placeholder with an error or fallback content
-      setMessages((prev) => {
-        const next = [...prev];
-        const idx = assistantIndex >= 0 ? assistantIndex : next.length - 1;
-        if (idx >= 0 && next[idx]) {
-          next[idx] = {
-            ...next[idx],
-            content: "I encountered an error. Trying fallback...",
-          } as ChatMessage;
-        }
-        return next;
-      });
-
-      // Fallback to non-streaming chat to avoid a dead end when stream fails (e.g., 404 if server not reloaded)
-      void chatMutation
-        .mutateAsync({
-          message: userMessage.content,
-          conversationHistory: conversationHistory,
-        })
-        .then((response) => {
-          setMessages((prev) => {
-            const next = [...prev];
-            const idx = assistantIndex >= 0 ? assistantIndex : next.length - 1;
-            if (idx >= 0 && next[idx]) {
-              next[idx] = {
-                role: "assistant",
-                content: response.message,
-                timestamp: new Date(),
-                toolCalls: response.toolCalls,
-              } as ChatMessage;
-            }
-            return next;
-          });
-          setConversationHistory(response.conversationHistory);
-        })
-        .catch(() => {
-          setMessages((prev) => {
-            const next = [...prev];
-            const idx = assistantIndex >= 0 ? assistantIndex : next.length - 1;
-            if (idx >= 0 && next[idx]) {
-              next[idx] = {
-                ...next[idx],
-                content: "I encountered an error. Please try again.",
-              } as ChatMessage;
-            }
-            return next;
-          });
-        });
-    };
-
-    const streamCtrl = apiService.chatStream(
-      {
+    try {
+      const response = await chatMutation.mutateAsync({
         message: userMessage.content,
-        conversationHistory,
-      },
-      { onDelta, onMeta, onDone, onError }
-    );
-    streamAbortRef.current = streamCtrl;
+        conversationId: currentConversationId || undefined,
+      });
 
-    // Focus back on input
-    inputRef.current?.focus();
+      const assistantMessage: ChatMessage = {
+        role: "assistant",
+        content: response.message,
+        timestamp: new Date(),
+        toolCalls: response.sources,
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+      
+      // Update conversation ID if this was a new conversation
+      if (!currentConversationId && response.conversationId) {
+        setCurrentConversationId(response.conversationId);
+        // Trigger sidebar refresh to show the new conversation
+        setRefreshSidebar(prev => prev + 1);
+      }
+
+    } catch (error) {
+      console.error("Chat error:", error);
+      const errorMessage: ChatMessage = {
+        role: "assistant",
+        content: "I encountered an error. Please try again.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+      // Focus back on input
+      inputRef.current?.focus();
+    }
   };
 
   const formatTime = (date: Date) => {
@@ -182,32 +133,55 @@ export function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-60px)] bg-background">
-      {/* Header */}
-      <div className="bg-card">
-        <div className="container py-1 mx-auto max-w-6xl">
-          <div className="flex justify-between items-center">
-            <div></div>
+    <div className="flex h-[calc(100vh-60px)] bg-background">
+      {/* Sidebar */}
+      {sidebarOpen && (
+        <ConversationSidebar
+          currentConversationId={currentConversationId || undefined}
+          onConversationSelect={handleConversationSelect}
+          onNewConversation={handleNewConversation}
+          refreshTrigger={refreshSidebar}
+        />
+      )}
 
-            {/* Status indicators */}
-            <div className="flex gap-2">
-              <Badge
-                variant={health?.status === "OK" ? "default" : "destructive"}
-              >
-                <Database className="mr-1 w-3 h-3" />
-                {health?.status === "OK" ? "Online" : "Offline"}
-              </Badge>
-              {stats && (
-                <Badge variant="secondary">{stats.totalDocuments} Docs</Badge>
-              )}
+      {/* Main Chat Area */}
+      <div className="flex flex-col flex-1">
+        {/* Header */}
+        <div className="bg-card border-b">
+          <div className="container py-3 mx-auto max-w-6xl">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                >
+                  <Menu className="w-4 h-4" />
+                </Button>
+                <h1 className="font-semibold">
+                  {currentConversationId ? "Chat" : "New Conversation"}
+                </h1>
+              </div>
+
+              {/* Status indicators */}
+              <div className="flex gap-2">
+                <Badge
+                  variant={health?.status === "OK" ? "default" : "destructive"}
+                >
+                  <Database className="mr-1 w-3 h-3" />
+                  {health?.status === "OK" ? "Online" : "Offline"}
+                </Badge>
+                {stats && (
+                  <Badge variant="secondary">{stats.totalDocuments} Docs</Badge>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Chat Messages Area */}
-      <div className="overflow-hidden flex-1">
-        <div className="container px-4 mx-auto max-w-4xl h-full">
+        {/* Chat Messages Area */}
+        <div className="overflow-hidden flex-1">
+          <div className="container px-4 mx-auto max-w-4xl h-full">
           <ScrollArea
             className="h-[calc(100vh-200px)] py-6 px-4"
             ref={scrollAreaRef}
@@ -310,7 +284,7 @@ export function ChatPage() {
                 ))}
 
                 {/* Loading indicator */}
-                {chatMutation.isPending && !isStreaming && (
+                {chatMutation.isPending && (
                   <div className="flex gap-3 justify-start">
                     <div className="flex-shrink-0">
                       <div className="flex justify-center items-center w-8 h-8 rounded-full bg-primary text-primary-foreground">
@@ -326,26 +300,26 @@ export function ChatPage() {
                   </div>
                 )}
               </div>
-            )}
-          </ScrollArea>
+              )}
+            </ScrollArea>
+          </div>
         </div>
-      </div>
 
-      {/* Error Display */}
-      {chatMutation.isError && (
-        <div className="container px-4 mx-auto max-w-4xl">
-          <Alert className="mb-4">
-            <AlertCircle className="w-4 h-4" />
-            <AlertDescription>
-              Chat error: {chatMutation.error?.message || "Unknown error"}
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
+        {/* Error Display */}
+        {chatMutation.isError && (
+          <div className="container px-4 mx-auto max-w-4xl">
+            <Alert className="mb-4">
+              <AlertCircle className="w-4 h-4" />
+              <AlertDescription>
+                Chat error: {chatMutation.error?.message || "Unknown error"}
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
 
-      {/* Input Area */}
-      <div className="border-t bg-card">
-        <div className="container px-4 py-4 mx-auto max-w-4xl">
+        {/* Input Area */}
+        <div className="border-t bg-card">
+          <div className="container px-4 py-4 mx-auto max-w-4xl">
           <form onSubmit={handleSendMessage} className="flex gap-2">
             <Input
               ref={inputRef}
@@ -353,17 +327,17 @@ export function ChatPage() {
               placeholder="Ask me anything about Frappe framework..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              disabled={chatMutation.isPending || isStreaming}
+              disabled={chatMutation.isPending}
               className="flex-1"
             />
             <Button
               type="submit"
               disabled={
-                !inputMessage.trim() || chatMutation.isPending || isStreaming
+                !inputMessage.trim() || chatMutation.isPending
               }
               className="px-6"
             >
-              {chatMutation.isPending || isStreaming ? (
+              {chatMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
@@ -376,23 +350,19 @@ export function ChatPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  // stop any active stream and clear
-                  if (streamAbortRef.current) streamAbortRef.current.abort();
-                  setIsStreaming(false);
-                  clearChat();
-                }}
-                disabled={chatMutation.isPending || isStreaming}
+                onClick={clearChat}
+                disabled={chatMutation.isPending}
               >
                 Clear
               </Button>
             )}
           </form>
 
-          <p className="mt-2 text-xs text-center text-muted-foreground">
-            AI responses may contain inaccuracies. Always verify with official
-            documentation.
-          </p>
+            <p className="mt-2 text-xs text-center text-muted-foreground">
+              AI responses may contain inaccuracies. Always verify with official
+              documentation.
+            </p>
+          </div>
         </div>
       </div>
     </div>
