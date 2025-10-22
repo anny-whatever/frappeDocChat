@@ -1,4 +1,0 @@
-Quick Select Rows on Frappe List View
-
-Click on the checkbox and drag through the rows to select multiple rows.
-To unselect, again click and drag on the selected rows.

@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/basics/doctypes/child-doctype",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/basics/doctypes/child-doctype",
+  "title": "child-doctype",
+  "content": "Up until now we have only seen DocTypes that can have a single value for each field.\nHowever, there might be a need for storing multiple records against one record, also\nknown as many-to-one relationships. A Child DocType is doctype which can only be linked\nto a parent DocType. To make a Child DocType make sure to check Is Child Table while\ncreating the doctype.\n\nTo link a Child Doctype to its parent, add another row in Parent Doctype with field\ntype Table and options as Child Table.\n\nChild DocType records are directly attached to the parent doc.\n\n>>> person = frappe.get_doc('Person', '000001')\n>>> person.as_dict()\n{\n 'first_name': 'John',\n 'last_name': 'Doe',\n 'qualifications': [\n {'title': 'Frontend Architect', 'year': '2017'},\n {'title': 'DevOps Engineer', 'year': '2016'},\n ]\n}\n\nChild Properties\n\nChild documents have special properties that define their relationship to their parent :\n\nparent: name of the parent.\nparenttype: DocType of the parent.\nparentfield: Field in the parent that links this child to it.\nidx: Sequence (row).",
+  "scrapedAt": "2025-10-22T00:01:33.882Z"
+}

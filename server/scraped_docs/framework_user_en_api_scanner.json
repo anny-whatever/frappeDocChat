@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/api/scanner",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/api/scanner",
+  "title": "scanner",
+  "content": "Frappe uses the open-source library Html5-QRCode to provide a flexible way to handle inputs like Barcodes, QRCodes, etc. using the device camera.\n\nfrappe.ui.Scanner\n\nnew frappe.ui.Scanner({ ... })\n\nCreates a new Scanner instance that can be used to scan single or multiple barcodes.\n\nOptions:\n\ncontainer: Dom element under which video feed from the camera will be shown.\ndialog: If set as true, will open a dialog to show video feed from the camera.\nmultiple: If set as false, will stop scanning after one successful scan.\non_scan: Callback method to handle the scanned input.\n\nHere is a sample client code to scan one single barcode and log it to the console.\n\nnew frappe.ui.Scanner({\n dialog: true, // open camera scanner in a dialog\n multiple: false, // stop after scanning one value\n on_scan(data) {\n console.log(data.decodedText);\n }\n});\n\nThe below code can be used to continously scan and handle the scanned input.\n\nconst scanner = new frappe.ui.Scanner({\n dialog: true, // open camera scanner in a dialog\n multiple: true, // stop after scanning one value\n on_scan(data) {\n handle_scanned_barcode(data.decodedText);\n }\n});\n\nTo stop the scanning, you can either close the dialog or use scanner.stop_scan();",
+  "scrapedAt": "2025-10-22T00:02:07.365Z"
+}

@@ -1,3 +1,0 @@
-This 10-part video tutorial will teach you how to build complex apps in Frappe
-
-Pre-requisites: You must have some understanding of Python, Javascript and MySQL before you start this tutorial.

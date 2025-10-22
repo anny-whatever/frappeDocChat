@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/discussions",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/discussions",
+  "title": "discussions",
+  "content": "You can now add a discussions component on any web page of the portal. The discussions component allows logged in users to enter and share messages with other users. This component can be used for discussions or to setup a portal where users help each other with their queries.\n\nSteps to Setup the Discussions Component\n\nOpen the web page document on which you want to add the discussions component or create a new web page and save it.\nScroll to the Page Building Blocks table.\nUnder Web Template select Discussions.\n\nClick on Edit values.\n\nEnter a Title, CTA Title and select the Web Page as the current web page name.\nYou can check Single Thread if you want the discussion to be single threaded.\nSave the page.",
+  "scrapedAt": "2025-10-22T00:03:48.747Z"
+}

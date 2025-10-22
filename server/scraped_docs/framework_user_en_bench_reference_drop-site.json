@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/reference/drop-site",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/reference/drop-site",
+  "title": "Usage",
+  "content": "Usage\n\nbench drop-site [OPTIONS] SITE\n\nDescription\n\nDrop an existing site. In this operation, the database is dropped and the\nrespective site's folder is moved from ./sites to ./archived_sites (unless\nspecified otherwise) on your Bench. A full site backup is taken prior to this.\n\nOptions\n\n--db-root-username Username for a DBMS user with drop database privileges.\nDefaults to root\n--db-root-password Password for the DBMS user\n--archived-sites-path Specify the path to move the site's folder in\n\nFlags\n\n--no-backup Skip backup prior to site drop\n--force Force drop-site even if an error is encountered\n\nExamples\n\nSkip the interactive prompt by passing the root password.\n\nbench drop-site {site} --db-root-password {db-root-pass}\n\nSkip taking a backup before site deletion.\n\nbench drop-site {site} --no-backup\n\nMove the site's folder in a different folder instead of the standard\n./archived_sites.\n\nbench drop-site {site} --archived-sites-path {path/to/archive}",
+  "scrapedAt": "2025-10-22T00:04:08.742Z"
+}

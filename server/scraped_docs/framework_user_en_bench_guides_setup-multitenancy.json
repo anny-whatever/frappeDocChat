@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/guides/setup-multitenancy",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/guides/setup-multitenancy",
+  "title": "Assuming that you've already got your first site running and you've performed",
+  "content": "Assuming that you've already got your first site running and you've performed\nthe production deployment steps, this section explains how to host your second\nsite (and more). Your first site is automatically set as default site. You can\nchange it with the command,\n\nbench use sitename\n\nPort based multitenancy\n\nYou can create a new site and make run it on a different port (while the first\none runs on port 80).\n\nSwitch off DNS based multitenancy (once)\n\nbench config dns_multitenant off\nCreate a new site\n\nbench new-site site2name\nSet port\n\nbench set-nginx-port site2name 82\nRe generate nginx config\n\nbench setup nginx\nReload nginx\n\nsudo service nginx reload\n\nDNS based multitenancy\n\nYou can name your sites as the hostnames that would resolve to it. Thus, all the sites you add to the bench would run on the same port and will be automatically selected based on the hostname.\n\nTo make a new site under DNS based multitenancy, perform the following steps.\n\nSwitch on DNS based multitenancy (once)\n\nbench config dns_multitenant on\nCreate a new site\n\nbench new-site site2name\nRe generate nginx config\n\nbench setup nginx\nReload nginx\n\nsudo service nginx reload",
+  "scrapedAt": "2025-10-22T00:04:32.173Z"
+}

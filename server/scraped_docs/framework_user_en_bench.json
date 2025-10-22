@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench",
+  "title": "bench",
+  "content": "Bench is a CLI tool to manage Frappe Deployments. It provides an easy interface to help you setup and manage multiple sites and apps based on Frappe Framework.\n\nHowever, the term bench may mean different things depending on the context. We use the term \"bench\" to refer to the CLI tool and the directory interchangeably. This may get confusing a lot of times.\n\n \"Did you update the bench?\"\n \n \"Yes, migrations for the latest version were smoother this time around.\"\n \n \"What?! I told you to update the CLI tool!\"\n \n \"Let's hope our clients like Version 13\"\n\nTo avoid these type of situations, we will refer to \"Bench\" as the bench directory and \"Bench CLI\" to refer to the CLI tool.\n\nTo install the bench CLI and setup a Frappe environment, please follow the installation instructions.\n\nYou may be surprised to know that a lot of the bench commands are provided by the Frappe Framework, not by the Bench CLI directly. In general, these are the commands which work on a specific site (can use the --site parameter). Even commands like bench update only provide thin wrappers around Frappe Framework commands such as backup and migrate, along with some other essential bench and system-level operations.\n\nReferences\n\nBench Commands\nFrappe Commands\nCommand References\nExtending the CLI",
+  "scrapedAt": "2025-10-22T00:04:02.073Z"
+}

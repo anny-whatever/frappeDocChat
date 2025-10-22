@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/desk/scripting",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/desk/scripting",
+  "title": "scripting",
+  "content": "Frappe framework allows you to script the standard models and views directly within the framework without additional code.\n\nDifferent ways of Scripting:\n\nClient Script\nServer Script\nScript Report\nSystem Console",
+  "scrapedAt": "2025-10-22T00:02:14.437Z"
+}

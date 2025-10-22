@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/data/import-large-csv-file",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/data/import-large-csv-file",
+  "title": "import-large-csv-file",
+  "content": "To import very large CSV files, you can use the bench utility import-csv.\n\nThe benefit is that this is not subject to timeouts if you use the web interface.\n\nHere is an example:\n\nbench --site test.erpnext.com import-csv ~/Downloads/Activity_Type.csv\n\nHelp\n\n$ bench import-csv --help\n Usage: bench import-csv [OPTIONS] PATH\n\nImport CSV using data import tool\n\nOptions:\n --only-insert Do not overwrite existing records\n --submit-after-import Submit document after importing it\n --ignore-encoding-errors Ignore encoding errors while coverting to unicode\n --help Show this message and exit.",
+  "scrapedAt": "2025-10-22T00:03:11.478Z"
+}

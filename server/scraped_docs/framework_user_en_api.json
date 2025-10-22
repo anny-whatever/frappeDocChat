@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/api",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/api",
+  "title": "Python",
+  "content": "Python\n\nFrappe aims to achieve minimum cognitive load for its users. Hence, you can find\nthe most used methods and utilities in the frappe namespace itself. It's the\nonly import you need (most of the time) in a Python file.\n\nDocument\nDatabase\nJinja\nCommon Utilities\nRouter\nResponse\nLanguage Resolution\nSearch\nHooks\nREST API\nFull Text Search\nDialog API\nQuery Builder\n\nJavascript\n\nFrappe attaches itself to the window object under the frappe namespace. You\nwill find most of the Client API under the frappe object. All of these methods\nare only available inside the Desk. A good way to explore these APIs is from the\nbrowser console.\n\nForm\nControls\nPage\nTree\nServer Calls (AJAX)\nCommon Utilities\nDialog API\nChart API\nScanner API\n\nOther\n\nREST API\nJinja API",
+  "scrapedAt": "2025-10-22T00:01:57.328Z"
+}

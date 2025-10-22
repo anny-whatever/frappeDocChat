@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/hidden-features/desk",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/hidden-features/desk",
+  "title": "Quick Select Rows on Frappe List View",
+  "content": "Quick Select Rows on Frappe List View\n\nClick on the checkbox and drag through the rows to select multiple rows.\nTo unselect, again click and drag on the selected rows.",
+  "scrapedAt": "2025-10-22T00:04:45.898Z"
+}

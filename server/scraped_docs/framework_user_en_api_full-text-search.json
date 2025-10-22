@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/api/full-text-search",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/api/full-text-search",
+  "title": "Frappe Wrapper for Whoosh",
+  "content": "Frappe Wrapper for Whoosh\n\nupdate_index_by_name(self, doc_name)\n\nWraps update_index method, gets the document from name and updates the index. This function changes the current user and should only be run as administrator or in a background job.\n\nArgs:\n\nself (object): FullTextSearch Instance\ndoc_name (str): name of the document to be updated\n\nremove_document_from_index(self, doc_name)\n\nRemove document from search index\n\nArgs:\n\nself (object): FullTextSearch Instance\ndoc_name (str): name of the document to be removed\n\nupdate_index(self, document)\n\nUpdate search index for a document\n\nArgs:\n\nself (object): FullTextSearch Instance\ndocument (_dict): A dictionary with title, path and content\n\nbuild_index(self)\n\nBuild index for all parsed documents\n\nsearch(self, text, scope=None, limit=20)\n\nSearch from the current index\n\nArgs:\n\ntext (str): String to search for\nscope (str, optional): Scope to limit the search. Defaults to None.\nlimit (int, optional): Limit number of search results. Defaults to 20.\n\nReturns:\n\n[list(_dict)]: Search results",
+  "scrapedAt": "2025-10-22T00:01:51.821Z"
+}

@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/portal-development/context",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/portal-development/context",
+  "title": "context",
+  "content": "You can render pages dynamically using Jinja templating language. To query data, you can update that context object that you pass to the template.\n\nThis can be done by adding a .py file with the same filename (e.g. index.py for index.md) with a get_context method.\n\nExample\n\nIf you want to show a page to see users, make a users.html and users.py file in the www/ folder.\n\nIn users.py:\n\nimport frappe\ndef get_context(context):\n context.users = frappe.get_list(\"User\", fields=[\"first_name\", \"last_name\"])\n\nIn users.html:\n\n### List of Users\n\n{% for user in users %}\n 2. {{ user.first_name }} {{ user.get(\"last_name\", \"\") }}\n\n{% endfor %}",
+  "scrapedAt": "2025-10-22T00:03:04.732Z"
+}

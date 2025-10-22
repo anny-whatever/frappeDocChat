@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/app-development/adding-custom-button-to-form",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/app-development/adding-custom-button-to-form",
+  "title": "adding-custom-button-to-form",
+  "content": "To create a custom button on your form, you need to edit the javascript file associated to your doctype. For example, If you want to add a custom button to User form then you must edit user.js.\n\nIn this file, you need to write a new method add_custom_button which should add a button to your form.\n\nFunction Signature for add_custom_button(...)\n\nfrm.add_custom_button(__(buttonName), function() {\n// perform desired action such as routing to new form or fetching etc.\n}, __(groupName));\n \n\nExample-1: Adding a button to User form\n\nWe should edit frappe/core/doctype/user/user.js\n frappe.ui.form.on('User', {\n refresh: function(frm) {\n frm.add_custom_button(__('Get User Email Address'), function() {\n frappe.msgprint(frm.doc.email);\n }, __(\"Utilities\"));\n }\n});\n \n\nYou should be seeing a button on user form as shown below,",
+  "scrapedAt": "2025-10-22T00:02:31.228Z"
+}

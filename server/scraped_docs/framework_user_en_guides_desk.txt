@@ -1,4 +1,0 @@
-Articles related to customization of Frappe Desk
-
-Formatter\_ For Link Fields
-Making Charts

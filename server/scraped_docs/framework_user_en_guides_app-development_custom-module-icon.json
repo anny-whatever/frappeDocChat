@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/app-development/custom-module-icon",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/app-development/custom-module-icon",
+  "title": "custom-module-icon",
+  "content": "If you want to create a custom icon for your module, you will have to create an SVG file for your module and set the path to this file in the desktop/config.py of your app. \n\nThis icon is loaded via AJAX first time, then it will be rendered.\n\nExample:\n\nfrom frappe import _\n\n def get_data():\n return {\n \"Frappe Apps\": {\n \"color\": \"orange\",\n \"icon\": \"assets/frappe/images/frappe.svg\",\n \"label\": _(\"Frappe.io Portal\"),\n \"type\": \"module\"\n }\n }\n\n PS: A great place to buy SVG icons for a low cost is the awesome Noun Project",
+  "scrapedAt": "2025-10-22T00:02:36.791Z"
+}

@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/resources/bench-procfile",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/resources/bench-procfile",
+  "title": "bench-procfile",
+  "content": "bench start uses honcho to manage multiple processes in developer mode.\n\nProcesses\n\nThe various process that are needed to run frappe are:\n\nbench start - the web server\nredis_cache for caching (general)\nredis_queue for managing queue for background workers\nredis_socketio as a message broker for real-time updates / updates from background workers\nweb for the frappe web server.\nsocketio for real-time messaging.\nschedule to trigger periodic tasks\nworker_* redis workers to handle async jobs\n\nOptionally if you are developing for frappe you can add:\n\nbench watch to automatically build the desk javascript app.\n\nSample\n\nredis_cache: redis-server config/redis_cache.conf\n redis_socketio: redis-server config/redis_socketio.conf\n redis_queue: redis-server config/redis_queue.conf\n web: bench serve --port 8000\n socketio: /usr/bin/node apps/frappe/socketio.js\n watch: bench watch\n schedule: bench schedule\n worker_short: bench worker --queue short\n worker_long: bench worker --queue long\n worker_default: bench worker --queue default",
+  "scrapedAt": "2025-10-22T00:04:36.907Z"
+}

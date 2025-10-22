@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/integration/social_login_key",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/integration/social_login_key",
+  "title": "social_login_key",
+  "content": "Add social login providers like Facebook, Frappe, Github, Google, Microsoft, etc and enable social login.\n\nSetup Social Logins\n\nTo add Social Login Key go to\n\n Integrations > Authentication > Social Login Key\n\nSocial Login Key\n\nSelect the Social Login Provider or select \"Custom\"\nIf required for provider enter \"Base URL\"\nTo enable check \"Enable Social Login\" to show Icon on login screen\nAlso add Client ID and Client Secret as per provider.\n\ne.g. Social Login Key\n\nSocial Login Provider : Frappe\nClient ID : ABCDEFG\nClient Secret : 123456\nEnable Social Login : Check\nBase URL : https://erpnext.org (required for some providers)\n\nGenerating Client ID and Client Secret for providers\n\nCreating a Google API Console project and client ID\nManually Build a Login Flow for Facebook\nCreating an OAuth App for GitHub\nAuthorize access to web applications using OpenID Connect and Azure Active Directory\nCreate a Connected App on Salesforce",
+  "scrapedAt": "2025-10-22T00:03:15.156Z"
+}

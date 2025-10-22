@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/deployment/how-to-migrate-doctype-changes-to-production",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/deployment/how-to-migrate-doctype-changes-to-production",
+  "title": "1. DocType / Schema Changes",
+  "content": "1. DocType / Schema Changes\n\nIf you are in developer_mode, the .json files for each DocType are automatically updated.\n\nWhen you update in your production using --latest or bench update, these changes are updated in the site's schema too!\n\n2. Permissions\n\nPermissions do not get updated because the user may have changed them. To update permissions, you can add a new patch in the patches.txt of your app.\n\nexecute:frappe.permissions.reset_perms(\"[docype]\")",
+  "scrapedAt": "2025-10-22T00:02:51.440Z"
+}

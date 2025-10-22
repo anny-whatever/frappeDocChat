@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/reference/reinstall",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/reference/reinstall",
+  "title": "Usage",
+  "content": "Usage\n\nbench reinstall [OPTIONS]\n\nDescription\n\nReinstall a site with the current apps. This will wipe all site data and start\nafresh. This is considered a destructive operation, hence, contains an\ninteractive confirmation prompt by default.\n\n Note: This feature only exists for MariaDB sites currently. In the future,\n they may be extended for PostgreSQL support as well.\n\nOptions\n\n--admin-password Administrator Password for reinstalled site\n--mariadb-root-username Root username for MariaDB\n--mariadb-root-password Root password for MariaDB\n\nFlags\n\n--yes Skip confirmation for reinstall\n\nExamples\n\nReinstall a site skipping the prompts for:\n\nConfirmation for operation\nMariaDB Root Password\nAdministrator Password\nbench reinstall --site {site} --yes\n--mariadb-root-password {db-pass}\n--admin-password {admin-pass}\n\nReinstall a site using an alternative user with DBMS SUPER privileges.\n\nbench reinstall\n--mariadb-root-username {db-user}\n--mariadb-root-password {db-pass}",
+  "scrapedAt": "2025-10-22T00:04:12.072Z"
+}

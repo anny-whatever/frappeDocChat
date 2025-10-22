@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/portal-development/redirects",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/portal-development/redirects",
+  "title": "redirects",
+  "content": "You can add redirects by adding the website_redirects hook.\n\nThe optional field redirect_http_status will allow you to specify a custom HTTP status code to use for the redirect - if not specified, the fallback is 301\n\nExamples\n\nwebsite_redirects = [\n # absolute location\n {\"source\": \"/from\", \"target\": \"https://mysite/from\"},\n\n # relative location\n {\"source\": \"/from\", \"target\": \"/main\", \"redirect_http_status\": 307},\n\n # use regex\n {\"source\": \"/from/(.*)\", \"target\": \"/main/\\1\"}\n]",
+  "scrapedAt": "2025-10-22T00:03:09.159Z"
+}

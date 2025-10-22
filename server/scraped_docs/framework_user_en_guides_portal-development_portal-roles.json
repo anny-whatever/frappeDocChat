@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/portal-development/portal-roles",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/portal-development/portal-roles",
+  "title": "Version: 7.1+",
+  "content": "Version: 7.1+\n\nRoles can be assigned to Website Users and they will see menu based on their role\n\nA default role can be set in Portal Settings\nEach Portal Menu Item can have a role associated with it. If that role is set, then only those users having that role can see that menu item\nRules can be set for default roles that will be set on default users on hooks\n\nRules for Default Role\n\nFor example if the Email Address matches with a contact id, then set role Customer or Supplier:\n\ndefault_roles = [\n {'role': 'Customer', 'doctype':'Contact', 'email_field': 'email_id',\n 'filters': {'ifnull(customer, \"\")': ('!=', '')}},\n {'role': 'Supplier', 'doctype':'Contact', 'email_field': 'email_id',\n 'filters': {'ifnull(supplier, \"\")': ('!=', '')}},\n {'role': 'Student', 'doctype':'Student', 'email_field': 'student_email_id'}\n ]",
+  "scrapedAt": "2025-10-22T00:03:05.819Z"
+}

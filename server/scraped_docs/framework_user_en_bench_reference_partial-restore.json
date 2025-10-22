@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/reference/partial-restore",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/reference/partial-restore",
+  "title": "Usage",
+  "content": "Usage\n\nbench partial-restore [OPTIONS] SQL_FILE_PATH\n\nDescription\n\nYou may want to restore only specific tables you've backed up to a site. You have\nlikely taken partial backups using the --only, --exclude options in bench backup.\n\nThe partial-restore command may be used to restore sites using partial backups. The\npartial backup files may be gzip compressed or plain SQL files. In essence, you can\nrestore anything from SQL files using this command.\n\nArguments\n\nSQL_FILE_PATH Path to the database source file. The path may be relative from\nthe bench directory root, or the sites folder. It may also be an absolute path.\n\n To learn more about relative and absolute paths, on Wikipedia click here.\n\nFlags\n\n-v, --verbose Add verbosity\n\nExamples\n\nRestore with partial backups on a site.\nbench --site {site} partial-restore -v {/path/to/sql/file}",
+  "scrapedAt": "2025-10-22T00:04:16.800Z"
+}

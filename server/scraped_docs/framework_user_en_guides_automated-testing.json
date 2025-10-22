@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/automated-testing",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/automated-testing",
+  "title": "automated-testing",
+  "content": "Frappe Provides you a test framework to write and execute tests that can be run directly on a Continuous Integration Tool like Travis\n\nYou can write server-side unit tests or UI tests",
+  "scrapedAt": "2025-10-22T00:03:29.617Z"
+}

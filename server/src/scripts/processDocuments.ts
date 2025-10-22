@@ -28,15 +28,15 @@ class DocumentProcessor {
    * @returns string The extracted title
    */
   private extractTitle(filename: string): string {
-    // Remove .txt or .json extension and replace underscores/hyphens with spaces
+    // Remove .json extension and replace underscores/hyphens with spaces
     return filename
-      .replace(/\.(txt|json)$/, "")
+      .replace(/\.json$/, "")
       .replace(/[_-]/g, " ")
       .replace(/\b\w/g, (l) => l.toUpperCase());
   }
 
   /**
-   * Read and parse a single document file
+   * Read and parse a single document file (JSON only)
    * @param filePath Path to the document file
    * @returns DocumentInfo | null
    */
@@ -51,35 +51,36 @@ class DocumentProcessor {
         return null;
       }
 
-      let documentData: any;
-      let content: string;
-      let title: string;
-      let sourceUrl: string | undefined;
-
-      // Check if file is JSON format (new format) or plain text (old format)
-      if (filename.endsWith('.json')) {
-        try {
-          documentData = JSON.parse(fileContent);
-          content = documentData.content || '';
-          title = documentData.title || this.extractTitle(filename);
-          sourceUrl = documentData.sourceUrl;
-        } catch (parseError) {
-          console.error(`Error parsing JSON file ${filename}:`, parseError);
-          return null;
-        }
-      } else {
-        // Legacy text format
-        content = fileContent.trim();
-        title = this.extractTitle(filename);
-        sourceUrl = undefined;
+      // Only process JSON files
+      if (!filename.endsWith('.json')) {
+        console.log(`Skipping non-JSON file: ${filename}`);
+        return null;
       }
 
-      return {
-        filename,
-        title,
-        content,
-        sourceUrl,
-      };
+      try {
+        const documentData = JSON.parse(fileContent);
+        
+        // Extract content from JSON
+        const content = documentData.content || '';
+        
+        if (!content.trim()) {
+          console.log(`Skipping JSON file with empty content: ${filename}`);
+          return null;
+        }
+
+        const title = documentData.title || this.extractTitle(filename);
+        const sourceUrl = documentData.sourceUrl;
+
+        return {
+          filename,
+          title,
+          content,
+          sourceUrl,
+        };
+      } catch (parseError) {
+        console.error(`Error parsing JSON file ${filename}:`, parseError);
+        return null;
+      }
     } catch (error) {
       console.error(`Error reading file ${filePath}:`, error);
       return null;
@@ -228,10 +229,10 @@ class DocumentProcessor {
         return;
       }
 
-      // Get all .txt and .json files from the directory
+      // Get all .json files from the directory
       const files = fs
         .readdirSync(SCRAPED_DOCS_DIR)
-        .filter((file) => file.endsWith(".txt") || file.endsWith(".json"))
+        .filter((file) => file.endsWith(".json"))
         .map((file) => path.join(SCRAPED_DOCS_DIR, file));
 
       console.log(`Found ${files.length} document files to process`);

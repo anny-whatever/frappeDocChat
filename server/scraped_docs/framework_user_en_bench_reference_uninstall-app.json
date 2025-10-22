@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/reference/uninstall-app",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/reference/uninstall-app",
+  "title": "Usage",
+  "content": "Usage\n\nbench uninstall-app [OPTIONS] APP\n\nDescription\n\nRemove Application and linked doctypes, modules from the site. Executing the\nvanilla command will check if the app exists on site before attempting to delete\nits modules and doctypes. The application may not be necessarily installed on\nthe bench to run the uninstall-app command.\n\nFlags\n\n-y, --yes To bypass confirmation prompt for uninstalling the app\n--dry-run List all doctypes that will be deleted\n--no-backup Do not backup the site\n--force Force remove the app from site\n\nExamples\n\nPerform a dry run to see what would happen on running it on a particular\nsite.\n\nbench --site {site} uninstall-app {app} --dry-run\n\nDon't take a backup before the application uninstall operation.\n\nbench --site {site} uninstall-app {app} --no-backup\n\nUse force to uninstall application from site.\n\nbench --site {site} uninstall-app {app} --force\n\nSkip the interactive prompt for confirmation of uninstall.\n\nbench --site {site} uninstall-app {app} --yes",
+  "scrapedAt": "2025-10-22T00:04:14.267Z"
+}

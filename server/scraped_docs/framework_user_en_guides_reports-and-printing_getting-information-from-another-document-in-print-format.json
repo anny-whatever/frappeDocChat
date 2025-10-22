@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/reports-and-printing/getting-information-from-another-document-in-print-format",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/reports-and-printing/getting-information-from-another-document-in-print-format",
+  "title": "getting-information-from-another-document-in-print-format",
+  "content": "In a print format, you can get data from another document. For example, if you have a field called sales_order in Sales Invoice, then you can get the sales order details using frappe.get_doc:\n\n{% set sales_order_doc = frappe.get_doc(\"Sales Order\", sales_order) %}\n\n{{ sales_order_doc.customer }}",
+  "scrapedAt": "2025-10-22T00:02:54.776Z"
+}

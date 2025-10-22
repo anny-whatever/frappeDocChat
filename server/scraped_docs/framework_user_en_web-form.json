@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/web-form",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/web-form",
+  "title": "Frappe provides an easy way to generate forms for your website with very little",
+  "content": "Frappe provides an easy way to generate forms for your website with very little\nconfiguration. These forms may be public (anyone can fill them up) or can be\nconfigured to require login.\n\nCreating a Web Form\n\nTo create a Web Form, type \"new web form\" in awesomebar and hit enter.\n\nEnter Title\nSelect DocType for which the record should be created.\nAdd some introduction (Optional).\nClick on \"Get Fields\" button to get all fields from selected doctype OR select fields for your web form.\nPublish it and you are good to go.\n\nCustomize Web Form →\n\nStandard Web Forms\n\nIf you check the \"Is Standard\" checkbox, a new folder will be created in the\nmodule of the Web Form. In this folder, you will see a .py and .js file\nthat you can use to configure the web form. These files need to be checked into\nversion control with your custom app. You can install this app on any site and\nit will have this web form installed.\n\n Is Standard field will only be visible when you are in developer mode.",
+  "scrapedAt": "2025-10-22T00:03:53.153Z"
+}

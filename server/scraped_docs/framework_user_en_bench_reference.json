@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/reference",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/reference",
+  "title": "reference",
+  "content": "Manual for the commands under Frappe & Bench, accessible via the Bench CLI.\n\nSite Commands\n\nnew-site\ndrop-site\nmigrate\nbackup\nreinstall\nlist-apps\ninstall-app\nuninstall-app\nshow-config\nset-config\nrestore\npartial-restore\n\nFrappe Utility Commands\n\nversion\n\nDatabase Maintenance Commands\n\ntransform-database\ntrim-database\ntrim-tables\n\nTranslation management\n\ngenerate-pot-file\nmigrate-csv-to-po\nupdate-po-files\ncompile-po-to-mo",
+  "scrapedAt": "2025-10-22T00:04:06.543Z"
+}

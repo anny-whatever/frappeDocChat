@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/guides/adding-custom-domains",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/guides/adding-custom-domains",
+  "title": "You can add multiple custom domains for your site, just run:",
+  "content": "You can add multiple custom domains for your site, just run:\n\nbench setup add-domain [desired-domain]\n\nOn running the command you will be asked for which site you want to set the custom domain for.\n\nYou can also setup SSL for your custom domain by using the options:\n\n --ssl-certificate [path-to-certificate]\n --ssl-certificate-key [path-to-certificate-key]\n\nExample:\n\n bench setup add-domain custom.erpnext.com --ssl-certificate /etc/letsencrypt/live/erpnext.cert --ssl-certificate-key /etc/letsencrypt/live/erpnext.key\n\nDomain configuration is stored in the respective site's site_config.json\n\n \"domains\": [\n {\n \"ssl\\_certificate\": \"/etc/letsencrypt/live/erpnext.cert\",\n \"domain\": \"erpnext.com\",\n \"ssl\\_certificate\\_key\": \"/etc/letsencrypt/live/erpnext.key\"\n }\n ],\n\nYou will need to regenerate the nginx configuration by runnning bench setup nginx and reload the nginx service by running sudo service nginx reload to put your custom domain in effect",
+  "scrapedAt": "2025-10-22T00:04:26.685Z"
+}

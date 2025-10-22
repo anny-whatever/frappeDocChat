@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/app-development/using-html-templates-in-javascript",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/app-development/using-html-templates-in-javascript",
+  "title": "using-html-templates-in-javascript",
+  "content": "Often while building javascript interfaces, there is a need to render DOM as an HTML template. Frappe Framework uses John Resig's Microtemplate script to render HTML templates in the Desk application.\n\n Note 1: In Frappe we use the Jinja-like {% raw %}{%{% endraw %} tags to embed code rather than the standard <%\n\n Note 2: Never use single quotes ' inside the HTML template.\n\nTo render a template,\n\nCreate a template html file in your app. e.g. address_list.html\nAdd it to build.json for your app (you can include it in frappe.min.js or your own javascript file).\nTo render it in your app, use frappe.render(frappe.templates.address_list, {[context]})\n\nExample Template:\n\nFrom erpnext/public/js/templates/address_list.js\n\n<p>\n <button class=\"btn btn-sm btn-default btn-address\">New Address</button>\n</p>\n\n{% for(var i=0, l=addrlist.length; i<l; i++) { %}\n <hr>\n {%= _(\"Edit\") %}\n {%= addr_list[i].address_type %}\n\n {% if(addr_list[i].is_primary_address) { %}\n {%= __(\"Primary\") %}\n {% } %}\n\n {% if(addr_list[i].is_shipping_address) { %}\n {%= __(\"Shipping\") %}\n {% } %}\n\n {%= addr_list[i].display %}\n{% } %}\n\n{% if(!addrlist.length) { %}\n {%= _(\"No address added yet.\") %}\n{% } %}",
+  "scrapedAt": "2025-10-22T00:02:40.090Z"
+}

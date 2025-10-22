@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/portal-development/table-of-contents",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/portal-development/table-of-contents",
+  "title": "table-of-contents",
+  "content": "You can add a table of contents by adding {index​} string on a new line.\n\nYou can also make Previous and Next buttons by adding previous or next in {}\n\nShowing contents\n\n# This is a title\n\nHello paragraph\n\n### Contents:\n\n{index​} will render as a numbered list of pages, but works only in index.md or index.html.\n\n{next​} for this Page will render as:\n\n{next}",
+  "scrapedAt": "2025-10-22T00:03:03.626Z"
+}

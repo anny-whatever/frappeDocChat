@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/reports-and-printing/where-do-i-find-standard-print-formats",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/reports-and-printing/where-do-i-find-standard-print-formats",
+  "title": "where-do-i-find-standard-print-formats",
+  "content": "Standard Print formats are auto generated from the layout of the DocType. You can customize the standard format by\n\n1. Customizing Standard Print\n\nGo to Setup > Customize > Customize Form View and you can:\n\nRe-arranging fields by dragging and dropping\nAdd static elements by adding HTML type fields and adding your HTML in Options\nHiding fields by setting the Print Hide property\n\n2. Creating new layouts based on Print Formats\n\nAs there are not templates that are generated for standard Print Formats, you will have to create new templates from scratch using the Jinja Templating Language via\n\nSetup > Printing and Branding > Print Format\n\nSee Print Format help.\nYou can use the Bootstrap CSS framework to layout your print formats\n\nTip: You can import Standard Template macros for building your print formats.\n\nExample, adding the standard header:\n\n{%- from \"templates/print\\_formats/standard\\_macros.html\" import add\\_header -%}\n\n{{ add\\_header() }}",
+  "scrapedAt": "2025-10-22T00:02:55.878Z"
+}

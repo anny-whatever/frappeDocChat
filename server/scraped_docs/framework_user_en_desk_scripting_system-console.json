@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/desk/scripting/system-console",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/desk/scripting/system-console",
+  "title": "System Console helps you run Python commands for debugging based on Script API",
+  "content": "System Console helps you run Python commands for debugging based on Script API\n. It is allowed only for users with role System Manager.\n\nTo access the System Console, search for it on the Search Bar.\n\nAPI\n\nThe methods exposed by the Script API\n can be accessed via the System Console\n\nLogging response\n\nTo print the response, use the log method.",
+  "scrapedAt": "2025-10-22T00:03:35.158Z"
+}

@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/reference/trim-database",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/reference/trim-database",
+  "title": "Usage",
+  "content": "Usage\n\nbench trim-database [OPTIONS]\n\nDescription\n\nDeleting DocTypes from the list view may not delete their corresponding tables from\nthe database. Migrations may leave ghost tables in your Site Database at times. This\n may be done for the sake of redundancy, for recovery in case your data is corrupted\n or lost, or simply, in cases of human error.\n\nThis command drops any tables that seem to be remnants like the above mentioned. It will\nattempt a partial backup of the tables before dropping them. In case, these tables were\nrequired, and were dropped errenously, you can restore them in your site's database using\nthe partial-restore command.\n\nOptions\n\n--format, -f Set output format. Available options are JSON and Table. Defaults to Table.\n\nFlags\n\n--dry-run Show what would be deleted.\n--no-backup Do not backup the site prior to the trimming.\n\nExamples\n\nYou want to figure out what data will be deleted if you run this command? Run it with the\n--dry-run flag.\n\nbench --site {site} trim-database --dry-run\n\nWant to build over this command and need the data to be machine parsable? Set the output\n--format to json.\n\nbench --site {site} trim-database --format json",
+  "scrapedAt": "2025-10-22T00:04:20.085Z"
+}

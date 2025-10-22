@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/basics/doctypes/single-doctype",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/basics/doctypes/single-doctype",
+  "title": "A Single DocType is a DocType that has only one instance in the database. It is useful",
+  "content": "A Single DocType is a DocType that has only one instance in the database. It is useful\nfor persisting things like System Settings, which don't make sense to have multiple\nrecords.\n\n>>> settings = frappe.get_doc('System Settings')\n>>> settings.notification_frequency\n'Daily'\n\nSchema\n\nSingle DocTypes are stored in the tabSingles table in the database, with each property having its own record.\n\nColumns:\n\ndoctype\nfield\nvalue",
+  "scrapedAt": "2025-10-22T00:01:34.975Z"
+}

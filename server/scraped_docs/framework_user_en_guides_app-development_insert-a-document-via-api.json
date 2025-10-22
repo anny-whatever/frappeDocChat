@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/app-development/insert-a-document-via-api",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/app-development/insert-a-document-via-api",
+  "title": "You can insert documents via a script using the frappe.get_doc method",
+  "content": "You can insert documents via a script using the frappe.get_doc method\n\nExamples:\n\n1. Insert a ToDo\n\ntodo = frappe.get_doc({\"doctype\":\"ToDo\", \"description\": \"test\"})\n todo.insert()\n\n2. Insert without the user's permissions being checked:\n\ntodo = frappe.get_doc({\"doctype\":\"ToDo\", \"description\": \"test\"})\n todo.insert(ignore_permissions = True)\n\n3. Submit after inserting\n\ntodo = frappe.get_doc({\"doctype\":\"ToDo\", \"description\": \"test\"})\n todo.insert(ignore_permissions=True)\n todo.submit()\n\n4. Insert a document on saving of another document\n\nclass MyType(Document):\n def on_update(self):\n todo = frappe.get_doc({\"doctype\":\"ToDo\", \"description\": \"test\"})\n todo.insert()\n\n5. Insert a document with child tables:\n\nsales_order = frappe.get_doc({\n \"doctype\": \"Sales Order\",\n \"company\": \"_Test Company\",\n \"customer\": \"_Test Customer\",\n \"delivery_date\": \"2013-02-23\",\n \"sales_order_details\": [\n {\n \"item_code\": \"_Test Item Home Desktop 100\",\n \"qty\": 10.0,\n \"rate\": 100.0,\n \"warehouse\": \"_Test Warehouse - _TC\"\n }\n ]\n })\n sales_order.insert()",
+  "scrapedAt": "2025-10-22T00:02:37.894Z"
+}

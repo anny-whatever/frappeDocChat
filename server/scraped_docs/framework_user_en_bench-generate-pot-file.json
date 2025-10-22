@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench-generate-pot-file",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench-generate-pot-file",
+  "title": "Usage",
+  "content": "Usage\n\nbench generate-pot-file [OPTIONS]\n\nDescription\n\nThis generates a template file for translations, holding all translatable strings of an app (but no translations). The template file will be written to the file [app_module]/locale/main.pot.\n\nFor many of our apps, this command is run automatically on a regular basis via GitHub Actions.\n\nOptions\n\n--app This parameter let's you specify an app, if you want to generate the POT file for one app only. Default: all apps.\n\nExamples\n\nRe-generate the POT file for ERPNext:\n\nbench generate-pot-file --app erpnext\n\nThis will extract all translatable strings from apps/erpnext and write them to apps/erpnext/erpnext/locale/main.pot",
+  "scrapedAt": "2025-10-22T00:04:22.283Z"
+}

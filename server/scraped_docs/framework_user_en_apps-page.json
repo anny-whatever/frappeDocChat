@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/apps-page",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/apps-page",
+  "title": "apps-page",
+  "content": "The Apps Page provides a quick navigation interface for accessing all the apps installed on your site. By default, all Frappe apps installed on your site will appear on this page.\n\nHow can we show our custom apps on apps page?\n\nYou can include it by adding the following configuration in your app’s hooks.py. Below is the example of Frappe CRM app.\n\nHere has_permission option is used to show/hide app icon based on app based business logic. E.g. Hide icon if user is a Website User.\n\n# Each item in the list will be shown as an app in the apps page\nadd_to_apps_screen = [{\n \"name\": \"crm\",\n \"logo\": \"/assets/crm/logo.png\",\n \"title\": \"CRM\",\n \"route\": \"/crm\",\n \"has_permission\": \"crm.api.check_app_permission\"\n}]\n\n It is supported in v15 and above\n\nSetting a default app\n\nYou can configure a default app, which means users will be taken directly to that app upon logging into the site. If no default app is set, users will see the Apps Page by default.\n\nDefault app configuration can be done at two levels:\n\nUser Level: Allows individual users to set their preferred default app.\n\nSystem Level: Sets a global default app for all users.",
+  "scrapedAt": "2025-10-22T00:03:52.057Z"
+}

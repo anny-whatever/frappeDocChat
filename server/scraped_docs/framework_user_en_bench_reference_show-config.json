@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/reference/show-config",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/reference/show-config",
+  "title": "Usage",
+  "content": "Usage\n\nbench show-config [OPTIONS]\n\nDescription\n\nThe applied configuration for your sites gets applied as a combination of the bench directory's common_site_config.json and the site's own site_config.json. Bench provides an interface to view the applied frappe.conf values for your sites. You may choose to access this information in tabular or JSON formats.\n\nTo read more about site configuration and understanding key precedence, refer to the docs here.\n\nFlags\n\n-f, --format Choose the format for listing apps installed on the specified site, options being \"text\" and \"json\". Default is \"text\".\n\nExamples\n\nShow site config for all sites in JSON format.\n\nbench --site all show-config -f json\n\nShow the site config in tabular form.\n\nbench --site {site} show-config --format text\n\nbench --site {site} show-config -f text\n\nbench --site {site} show-config",
+  "scrapedAt": "2025-10-22T00:04:15.384Z"
+}

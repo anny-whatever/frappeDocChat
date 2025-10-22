@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/tutorial/form-scripts",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/tutorial/form-scripts",
+  "title": "form-scripts",
+  "content": "Form Scripts are client-side javascript code that enhances the UX of your Forms.\n\nLet's say you want to create a membership for a member. To do this, you have to\ngo to the Library Membership list, create a new form, select the member and\nother fields and then save.\n\nSimilarly, when you want to create a transaction against a member, you have to\nmake a new Library Transaction form.\n\nWe can make this process easier. Write the following code in library_member.js\n\nfrappe.ui.form.on('Library Member', {\n refresh: function(frm) {\n frm.add_custom_button('Create Membership', () => {\n frappe.new_doc('Library Membership', {\n library_member: frm.doc.name\n })\n })\n frm.add_custom_button('Create Transaction', () => {\n frappe.new_doc('Library Transaction', {\n library_member: frm.doc.name\n })\n })\n }\n});\n\nNow, refresh your page and go to the Library Member form. You should see two buttons\non the top right. Click on them to try them out. They will automatically set the\nLibrary Member in each of those documents making the process easier.\n\nWe have only scratched the surface here. You can do a lot more with Form\nScripts. Learn more about the API at Form Scripts\nAPI.\n\nNext: Portal Pages",
+  "scrapedAt": "2025-10-22T00:01:10.350Z"
+}

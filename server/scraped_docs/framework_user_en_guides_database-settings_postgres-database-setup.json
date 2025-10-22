@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/database-settings/postgres-database-setup",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/database-settings/postgres-database-setup",
+  "title": "postgres-database-setup",
+  "content": "Use following command to use Postgres as database for your new site.\n\nbench new-site <site-name> --db-type postgres\n\nNote: Make sure you have Postgres version 9 or greater installed in your system.",
+  "scrapedAt": "2025-10-22T00:03:28.480Z"
+}

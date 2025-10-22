@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/deployment/email-notifications-for-failed-background-jobs",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/deployment/email-notifications-for-failed-background-jobs",
+  "title": "Frappe handles failure of jobs in the following way,",
+  "content": "Frappe handles failure of jobs in the following way,\n\n1) If a job fails, (raises exception), it's logged in Scheduler Log and  logs/worker.error.log.\n2) Keeps a lock file and would not run anymore if lock file is there.\n3) Raises LockTimeoutError in case the lock file is more than 10 minutes old.\n\nYou can configure email notification for scheduler errors. By writing a file, sites/common_site_config.json with content \n\n{\n \"celery_error_emails\": {\n \"ADMINS\": [\n [\n \"Person 1\",\n \"person1@example.com\"\n ],\n [\n \"Person2 \",\n \"person2@example.com\"\n ]\n ],\n \"SERVER_EMAIL\": \"exceptions@example.com\"\n }\n}\n\nOne limitation is that it'll use local mailserver on port 25 to send the emails.",
+  "scrapedAt": "2025-10-22T00:02:50.298Z"
+}

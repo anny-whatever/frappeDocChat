@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/reference/list-apps",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/reference/list-apps",
+  "title": "Usage",
+  "content": "Usage\n\nbench list-apps [OPTIONS]\n\nDescription\n\nList all the Frappe Applications installed on the specified site. The\ninformation shown by the command is fetched from the Installed Applications\nDocType which tracks the latest version of the apps, the site was migrated to.\nThe global default installed_apps is used as fallback.\n\nMulti-site support has been added in Version 13. To see the summary for all\nsites, run the command with site's value as all.\n\nOptions\n\n--format, -f Choose the format for listing apps installed on the\nspecified site, options being \"text\" and \"json\". Default is \"json\".\n\nExamples\n\nList apps installed on all sites.\n\nbench --site all list-apps\n\nList apps installed on all sites in parsable JSON format.\n\nbench --site all list-apps --format json\n\nList apps installed on a specific site in text format.\n\nbench --site {site} list-apps --format text\n\nbench --site {site} list-apps -f text\n\nbench --site {site} list-apps",
+  "scrapedAt": "2025-10-22T00:04:13.173Z"
+}

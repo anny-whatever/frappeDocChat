@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/app-development/custom_action_link_field",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/app-development/custom_action_link_field",
+  "title": "custom_action_link_field",
+  "content": "You can add a new custom link option to the standard link field by defining the function in the namespace frappe.ui.form.ControlLink.link_options.\n\nIn the frappe.ui.form.ControlLink.link_options, you have access to the link field object.\n\n1. Adding Custom Option\n\nfrappe.ui.form.ControlLink.link_options = function(link) {\n return [\n {\n html: \"\"\n + \" \"\n + __(\"Custom Link Option\")\n + \"\",\n label: __(\"Custom Link Option\"),\n value: \"custom__link_option\",\n action: () => {}\n }\n ];\n}\n\nOnce a function is assigned to frappe.ui.form.ControlLink.link_options, the link field will have a new link option:",
+  "scrapedAt": "2025-10-22T00:02:26.755Z"
+}

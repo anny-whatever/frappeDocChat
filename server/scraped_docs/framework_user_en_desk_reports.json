@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/desk/reports",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/desk/reports",
+  "title": "Frappe framework is best suited for business applications and reporting is an",
+  "content": "Frappe framework is best suited for business applications and reporting is an\nimportant part of any business. Frappe supports 3 different ways to build\nreports depending on their complexity.\n\nLet's discuss each type and how to build them using Frappe.\n\nReport Builder: Simple reports that are built from the Desk user interface.\nQuery Report: Write Reports using SQL query\nScript Report: Write Reports using scripts\n\nQuery Report View\n\nFor both Query Reports and Script Reports the same UI view is used to render\nthem. So, both of them benefit from the UI features like Print, PDF, Export to\nExcel/CSV, Auto Email Report, etc.\n\nQuery Report Features",
+  "scrapedAt": "2025-10-22T00:02:12.945Z"
+}

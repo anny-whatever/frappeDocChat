@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/portal-development/ordering",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/portal-development/ordering",
+  "title": "ordering",
+  "content": "You can defining the ordering of pages in index by defining the index.txt file in your folder. The index.txt file must have the names (without extensions) of the pages in that folder indicating the order.\n\nFor example for this folder the index.txt looks like:\n\nadding-pages\n ordering\n contents\n context\n building",
+  "scrapedAt": "2025-10-22T00:03:01.399Z"
+}

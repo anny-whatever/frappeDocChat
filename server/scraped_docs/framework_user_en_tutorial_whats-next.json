@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/tutorial/whats-next",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/tutorial/whats-next",
+  "title": "The goal of this tutorial was to give an introduction to the various parts of",
+  "content": "The goal of this tutorial was to give an introduction to the various parts of\nthe framework. We have only scratched the surface here. Frappe Framework has a\nlot more features that have enabled us to build complex software such as\nERPNext.\n\nYou can deep dive into topics by going through the rest of the documentation.\nHere are some topics to get you started:\n\nArchitecture\nDocType\nDocument API\nForm API\nBench CLI\n\nNeed Help?\n\nYou can ask for help on our public forum: discuss.frappe.io",
+  "scrapedAt": "2025-10-22T00:01:12.533Z"
+}

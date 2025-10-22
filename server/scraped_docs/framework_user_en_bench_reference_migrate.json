@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/reference/migrate",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/reference/migrate",
+  "title": "Usage",
+  "content": "Usage\n\nbench migrate [OPTIONS]\n\nDescription\n\nThe migrate command updates the site's state to the current available apps. It\nperforms a range of tasks, in order:\n\nRun before_migrate Hooks\nRun Application Patches\nSynchronize Database Schema and Background Jobs\nSynchronize Fixtures\nSynchronize Dashboards, Desktop Icons and Web Pages\nUpdates Translations\nRebuild Search Index for all routes\nRun after_migrate Hooks\n\nThis operation also updates the touched_tables.json file for the respective\nfile and updates the App Versions in the \"Installed Applications\" DocType.\n\nFlags\n\n--skip-failing Skip patches that fail to run\n--skip-search-index Skip search indexing for web documents\n\nExamples\n\nRun migrations on an existing site.\n\nbench --site {site} migrate\n\nRun migrations skipping rebuilding search index for web documents\n\nbench --site {site} migrate --skip-search-index\n\nRun migrations skipping any failing patches.\n\nbench --site {site} migrate --skip-failing\n\n Note: Skipping failing patches is not recommended for production use",
+  "scrapedAt": "2025-10-22T00:04:09.847Z"
+}

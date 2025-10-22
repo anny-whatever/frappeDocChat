@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/basics/architecture",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/basics/architecture",
+  "title": "Frappe Framework is a full-stack web based framework and it includes all the",
+  "content": "Frappe Framework is a full-stack web based framework and it includes all the\ntools needed to deploy a site into production. Database, caching, background\njobs, realtime notifications, etc are all configured when you set up a Frappe\nsite.\n\nFrappe framework is based on Python, so it uses the virtualenv to setup\nisolated environments for multiple Python versions. You can also use it to\ndeploy sites with different Frappe versions.\n\nThe following diagram closely resembles the frappe-bench directory structure\nand its interface with different parts of the stack.\n\nArchitecture\n\nTo setup a Frappe based site, you need to first install Bench. If you haven't\ninstalled it already, check out the Installation\npage.\n\nYou can create a new frappe-bench setup by running the following command:\n\nbench init frappe-bench\n\nThis command will do the following:\n\nCreate a directory called frappe-bench and frappe-bench/sites, frappe-bench/apps within it.\nSetup a python virtual environment under frappe-bench/env.\nCreate a frappe-bench/config folder to store redis configuration files.\nDownload frappe app and pip install it.\nInstall node packages.\nBuild JS/CSS assets.\n\nEach frappe-bench setup spawns it owns web, redis and node processes.",
+  "scrapedAt": "2025-10-22T00:01:13.908Z"
+}

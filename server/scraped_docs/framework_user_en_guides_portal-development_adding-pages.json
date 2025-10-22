@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/portal-development/adding-pages",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/portal-development/adding-pages",
+  "title": "adding-pages",
+  "content": "To add pages, just add .html or .md files in the www folder. The pages must only have the content, not the and tags.\n\nYou can also write markdown pages\n\nIndex\n\nThe first file in a folder must be called index.md or index.html\n\nEither file must be present for the system to make this a valid folder to build pages.\n\nMarkdown\n\n# This is a title\n\nThis is some page content\n a link\n\nAdding Links\n\nLinks urls to pages can be given without the .html extension for example /home/link\n\nTitle\n\nThe first `block if present will be the page title if not specified in a special tag. If no\n\n` or title is specified, the file name will be the title.\n\nAdding CSS\n\nYou can also add a .css file with the same filename (e.g. index.css for index.md) that will be rendered with the page.\n\nSpecial Tags\n\n`` will make the page render in Jinja\n`` will add a custom title\nwill not add breadcrumbs in the page\n<h1 id=\"4-will-enable-caching-if-you-have-used-jinja-templating\">4. will enable caching (if you have used Jinja templating)",
+  "scrapedAt": "2025-10-22T00:03:02.535Z"
+}

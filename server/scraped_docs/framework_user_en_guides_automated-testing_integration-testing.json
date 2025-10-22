@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/automated-testing/integration-testing",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/automated-testing/integration-testing",
+  "title": "integration-testing",
+  "content": "You can write integration tests using Cypress. It is a NodeJS based full-stack testing framework which doesn't rely on Selenium.\n\nTo write integration tests, create a .js file in the cypress/integration directory.\n\nExample\n\nHere is an example of an integration test to check insertion of a To Do\n\ncontext('ToDo', () => {\n before(() => {\n cy.login('Administrator', 'admin');\n cy.visit('/desk');\n });\n\n it('creates a new todo', () => {\n cy.visit('/app/todo/new-todo-1');\n cy.fill_field('description', 'this is a test todo', 'Text Editor').blur();\n cy.get('.page-title').should('contain', 'Not Saved');\n cy.get('.primary-action').click();\n cy.visit('/desk#List/ToDo');\n cy.location('hash').should('eq', '/app/todo');\n cy.get('.list-row').should('contain', 'this is a test todo');\n });\n});\n\nRunning Cypress Locally\n\nCypress uses any chromium based browser installed on your system to run tests. Every app has it's own cypress test suite.\nFor example, to run test for the frappe app, run the following commands\n\ncd ~/frappe-bench/apps/frappe\nyarn cypress:open\n\nThis will open the Cypress Electron shell where you can run any test manually or run all of the tests.",
+  "scrapedAt": "2025-10-22T00:03:31.830Z"
+}

@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/bench/guides/diagnosing-the-scheduler",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/bench/guides/diagnosing-the-scheduler",
+  "title": "diagnosing-the-scheduler",
+  "content": "If you're experiencing delays in scheduled jobs or they don't seem to run, you can run the several commands to diagnose the issue.\n\nbench doctor\n\nThis will output the following in order:\n- Scheduler Status per site\n- Number of Workers\n- Pending Tasks\n\nDesirable output:\n\nWorkers online: 0\n -----None Jobs-----\n\nbench --site [site-name] show-pending-jobs\n\nThis will output the following in order:\n- Queue\n- Tasks within Queue\n\nDesirable output:\n\n-----Pending Jobs-----\n\nbench purge-jobs\n\nThis will remove all pending jobs from all queues",
+  "scrapedAt": "2025-10-22T00:04:28.897Z"
+}

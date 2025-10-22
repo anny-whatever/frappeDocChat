@@ -1,0 +1,7 @@
+{
+  "route": "framework/user/en/guides/portal-development",
+  "sourceUrl": "https://docs.frappe.io/framework/user/en/guides/portal-development",
+  "title": "portal-development",
+  "content": "You can make your website by adding pages to the /www folder of your website. The urls of your site will match the path of your pages within the /www folder.\n\nPages must be .html or .md (Markdown) files. Basic HTML template is provided in frappe in frappe/templates/base_template.html",
+  "scrapedAt": "2025-10-22T00:03:00.305Z"
+}
