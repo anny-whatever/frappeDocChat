@@ -55,6 +55,7 @@ export function ChatPage() {
     // Prepare assistant placeholder for streaming
     setIsStreaming(true);
     let assistantIndex = -1;
+    let isFirstDelta = true;
     setMessages((prev) => {
       assistantIndex = prev.length;
       return [
@@ -68,13 +69,17 @@ export function ChatPage() {
     });
 
     const onDelta = (delta: string) => {
+      console.log("onDelta called with:", delta, "isFirstDelta:", isFirstDelta);
       setMessages((prev) => {
         const next = [...prev];
         const idx = assistantIndex >= 0 ? assistantIndex : next.length - 1;
+        console.log("Current content before update:", next[idx]?.content);
         next[idx] = {
           ...next[idx],
-          content: (next[idx]?.content || "") + delta,
+          content: isFirstDelta ? delta : (next[idx]?.content || "") + delta,
         } as ChatMessage;
+        console.log("New content after update:", next[idx]?.content);
+        isFirstDelta = false;
         return next;
       });
     };
@@ -92,6 +97,7 @@ export function ChatPage() {
     };
 
     const onDone = (payload: { conversationHistory: Message[] }) => {
+      console.log("onDone called with payload:", payload);
       setConversationHistory(payload.conversationHistory);
       setIsStreaming(false);
       streamAbortRef.current = null;

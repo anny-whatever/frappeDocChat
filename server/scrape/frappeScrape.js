@@ -36,9 +36,9 @@ function routeToFilename(route) {
 // Helper function to extract title from content
 function extractTitleFromContent(content) {
   if (!content) return null;
-  
+
   // Try to find the first line that looks like a title
-  const lines = content.split('\n').filter(line => line.trim());
+  const lines = content.split("\n").filter((line) => line.trim());
   if (lines.length > 0) {
     const firstLine = lines[0].trim();
     // If the first line is short and doesn't end with punctuation, it's likely a title
@@ -46,7 +46,7 @@ function extractTitleFromContent(content) {
       return firstLine;
     }
   }
-  
+
   return null;
 }
 
@@ -158,9 +158,9 @@ async function scrapeAll() {
     const documentData = {
       route: route,
       sourceUrl: `${BASE_URL}/${route}`,
-      title: extractTitleFromContent(content) || route.split('/').pop(),
+      title: extractTitleFromContent(content) || route.split("/").pop(),
       content: content,
-      scrapedAt: new Date().toISOString()
+      scrapedAt: new Date().toISOString(),
     };
 
     // Save content to file (now as JSON)

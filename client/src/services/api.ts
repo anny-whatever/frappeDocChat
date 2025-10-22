@@ -150,9 +150,13 @@ export const apiService = {
     request: ChatRequest,
     handlers: {
       onDelta?: (delta: string) => void;
-      onMeta?: (meta: { toolCalls?: any[]; timestamp?: string }) => void;
-      onDone?: (payload: { conversationHistory: Message[] }) => void;
+      onMeta?: (meta: { toolCalls?: any[]; timestamp?: string; iterations?: number }) => void;
+      onDone?: (payload: { conversationHistory: Message[]; finalResponse?: string }) => void;
       onError?: (err: Error) => void;
+      onStatus?: (status: { message: string }) => void;
+      onToolStart?: (tool: { toolName: string; toolId: string }) => void;
+      onToolResult?: (result: { toolName: string; toolId: string; success: boolean; error?: string }) => void;
+      onWarning?: (warning: { message: string }) => void;
     }
   ): { abort: () => void } {
     const controller = new AbortController();
@@ -182,6 +186,11 @@ export const apiService = {
           // keep last incomplete part in buffer
           buffer = parts.pop() || "";
           for (const part of parts) {
+            if (part.trim() === "" || part.startsWith(":")) {
+              // Skip empty parts and comments (heartbeat)
+              continue;
+            }
+            
             const lines = part.split("\n");
             let event: string | null = null;
             let data: string | null = null;
@@ -193,14 +202,41 @@ export const apiService = {
               }
             }
             if (!event || data == null) continue;
+            
             try {
               const parsed = JSON.parse(data);
-              if (event === "message") handlers.onDelta?.(parsed.delta || "");
-              else if (event === "meta") handlers.onMeta?.(parsed);
-              else if (event === "done") handlers.onDone?.(parsed);
-              else if (event === "error")
-                handlers.onError?.(new Error(parsed.message || "Stream error"));
+              console.log("Stream event:", event, "data:", parsed);
+              
+              switch (event) {
+                case "delta":
+                  handlers.onDelta?.(parsed.delta || "");
+                  break;
+                case "status":
+                  handlers.onStatus?.(parsed);
+                  break;
+                case "tool_start":
+                  handlers.onToolStart?.(parsed);
+                  break;
+                case "tool_result":
+                  handlers.onToolResult?.(parsed);
+                  break;
+                case "warning":
+                  handlers.onWarning?.(parsed);
+                  break;
+                case "meta":
+                  handlers.onMeta?.(parsed);
+                  break;
+                case "done":
+                  handlers.onDone?.(parsed);
+                  break;
+                case "error":
+                  handlers.onError?.(new Error(parsed.error || "Stream error"));
+                  break;
+                default:
+                  console.log("Unknown stream event:", event, parsed);
+              }
             } catch (e) {
+              console.error("Stream parse error:", e, "data:", data);
               // swallow parse errors, but surface via onError if desired
             }
           }
@@ -218,7 +254,11 @@ export const apiService = {
           processBuffer();
         }
       } catch (err) {
-        handlers.onError?.(err as Error);
+        if (err instanceof Error && err.name === 'AbortError') {
+          console.log("Stream aborted by user");
+        } else {
+          handlers.onError?.(err as Error);
+        }
       }
     })();
 

@@ -1,6 +1,6 @@
-import { Tool } from "../toolRegistry.js";
-import { EmbeddingService } from "../../services/embeddingService.js";
-import { DatabaseService } from "../../services/databaseService.js";
+import type { Tool } from "../toolRegistry.ts";
+import { EmbeddingService } from "../../services/embeddingService.ts";
+import { DatabaseService } from "../../services/databaseService.ts";
 import OpenAI from "openai";
 import dotenv from "dotenv";
 

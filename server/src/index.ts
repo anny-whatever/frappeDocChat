@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { EmbeddingService } from "./services/embeddingService.js";
-import { DatabaseService } from "./services/databaseService.js";
-import { AgentService, Message } from "./agents/agentService.js";
+import { EmbeddingService } from "./services/embeddingService.ts";
+import { DatabaseService } from "./services/databaseService.ts";
+import { AgentService } from "./agents/agentService.ts";
+import type { Message } from "./agents/agentService.ts";
 
 dotenv.config();
 
@@ -172,81 +173,103 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-// Chat streaming endpoint (SSE-style)
+// Test SSE endpoint
+app.get("/api/test-stream", (req, res) => {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+    "Access-Control-Allow-Origin": "*",
+  });
+
+  let counter = 0;
+  const interval = setInterval(() => {
+    counter++;
+    res.write(`event: test\n`);
+    res.write(`data: {"message": "Test message ${counter}"}\n\n`);
+    
+    if (counter >= 5) {
+      res.write(`event: done\n`);
+      res.write(`data: {"message": "Test completed"}\n\n`);
+      clearInterval(interval);
+      res.end();
+    }
+  }, 1000);
+
+  req.on("close", () => {
+    clearInterval(interval);
+  });
+});
+
+// SSE-style streaming endpoint
 app.post("/api/chat/stream", async (req, res) => {
+  console.log("\n🌊 Starting streaming chat endpoint");
+  
+  // Set SSE headers
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+  });
+
+  let isClientConnected = true;
+
+  // Handle client disconnect
+  req.on("close", () => {
+    console.log("🔌 Client disconnected from stream");
+    isClientConnected = false;
+  });
+
+  req.on("error", (error) => {
+    console.error("🚨 Request error:", error);
+    isClientConnected = false;
+  });
+
+  // Connection check function
+  const checkConnection = () => !isClientConnected;
+
   try {
     const { message, conversationHistory = [] } = req.body;
 
-    if (!message || typeof message !== "string") {
-      res
-        .status(400)
-        .json({ error: "Message is required and must be a string" });
-      return;
-    }
-    if (message.trim().length === 0) {
-      res.status(400).json({ error: "Message cannot be empty" });
+    if (!message) {
+      res.write(`event: error\n`);
+      res.write(`data: ${JSON.stringify({ error: "Message is required" })}\n\n`);
+      res.end();
       return;
     }
 
-    // Set headers for server-sent events
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache, no-transform");
-    res.setHeader("Connection", "keep-alive");
+    console.log(`📨 Received message: "${message}"`);
 
-    // Helpful for proxies (Heroku, etc.) to flush data
-    if (typeof (res as any).flushHeaders === "function") (res as any).flushHeaders();
+    // Send initial heartbeat
+    res.write(`event: heartbeat\n`);
+    res.write(`data: ${JSON.stringify({ timestamp: new Date().toISOString() })}\n\n`);
 
-    const writeEvent = (event: string, data: any) => {
-      res.write(`event: ${event}\n`);
-      res.write(`data: ${JSON.stringify(data)}\n\n`);
-    };
-
-    let clientClosed = false;
-    req.on("close", () => {
-      clientClosed = true;
-    });
-
-    // Process the message fully via agent, then stream chunks of the result
-    const agentResponse = await agentService.processMessage(
+    // Start agent streaming
+    await agentService.processMessageStream(
       message,
-      conversationHistory as Message[]
+      conversationHistory,
+      res,
+      checkConnection
     );
 
-    const finalText: string = agentResponse.response || "";
-    const chunkSize = 64; // characters per chunk for smoother UI
-    for (let i = 0; i < finalText.length && !clientClosed; i += chunkSize) {
-      const delta = finalText.slice(i, i + chunkSize);
-      writeEvent("message", { delta });
-    }
-
-    // Send tool calls metadata (if any)
-    writeEvent("meta", {
-      toolCalls: agentResponse.toolCalls || [],
-      timestamp: new Date().toISOString(),
-    });
-
-    // Signal completion with updated conversation history
-    writeEvent("done", {
-      conversationHistory: agentResponse.conversationHistory,
-    });
-
-    res.end();
+    console.log("✅ Stream completed successfully");
+    
   } catch (error) {
-    // If headers already sent (stream started), emit error event; else JSON error
-    if (res.headersSent) {
+    console.error("🚨 Stream error:", error);
+    
+    if (isClientConnected) {
       res.write(`event: error\n`);
-      res.write(
-        `data: ${JSON.stringify({
-          error: "Internal server error during chat",
-          message: error instanceof Error ? error.message : "Unknown error",
-        })}\n\n`
-      );
+      res.write(`data: ${JSON.stringify({ 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      })}\n\n`);
+    }
+  } finally {
+    if (isClientConnected) {
+      res.write(`event: end\n`);
+      res.write(`data: ${JSON.stringify({ timestamp: new Date().toISOString() })}\n\n`);
       res.end();
-    } else {
-      res.status(500).json({
-        error: "Internal server error during chat",
-        message: error instanceof Error ? error.message : "Unknown error",
-      });
     }
   }
 });
