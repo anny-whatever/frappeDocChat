@@ -398,27 +398,12 @@ Remember: Use the search tool before answering any Frappe-related questions.`,
           timestamp: new Date().toISOString()
         })) return;
 
-        // Prepare search query for documentation
-        const searchQuery = this.prepareSearchQuery(message, currentMessages);
-        console.log(`🔍 Search query: "${searchQuery}"`);
+        // Prepare system message with general instructions
+        const systemMessage = `You are a helpful assistant that specializes in Frappe Framework documentation. 
+You have access to a search_documentation tool that can search through comprehensive Frappe documentation.
+Use this tool when you need specific information about Frappe concepts, APIs, or implementation details.
+Provide clear, accurate, and helpful responses based on the documentation.`;
 
-        // Search documentation
-        if (!writeSSE("tool_start", { 
-          tool: "search_documentation", 
-          query: searchQuery,
-          timestamp: new Date().toISOString()
-        })) return;
-
-        const searchResults = await this.searchDocumentation(searchQuery);
-        
-        if (!writeSSE("tool_result", { 
-          tool: "search_documentation", 
-          results: searchResults,
-          timestamp: new Date().toISOString()
-        })) return;
-
-        // Prepare context for OpenAI
-        const systemMessage = this.buildSystemMessage(searchResults);
         const streamMessages: Message[] = [
           { role: "system", content: systemMessage },
           ...currentMessages
@@ -427,99 +412,137 @@ Remember: Use the search tool before answering any Frappe-related questions.`,
         console.log("🚀 Starting OpenAI streaming...");
 
         // Create OpenAI stream using proper SDK v4 method
-        const stream = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: streamMessages as any[],
-          temperature: 0.1,
-          max_tokens: 2000,
-          stream: true,
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "search_documentation",
-                description: "Search the Frappe documentation for specific information",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    query: {
-                      type: "string",
-                      description: "The search query for documentation"
-                    }
-                  },
-                  required: ["query"]
+        let stream;
+        try {
+          stream = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: streamMessages as any[],
+            temperature: 0.1,
+            max_tokens: 2000,
+            stream: true,
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "search_documentation",
+                  description: "Search the Frappe documentation for specific information",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      query: {
+                        type: "string",
+                        description: "The search query for documentation"
+                      }
+                    },
+                    required: ["query"]
+                  }
                 }
               }
-            }
-          ]
-        });
+            ]
+          });
+          console.log("✅ OpenAI stream created successfully");
+        } catch (error) {
+          console.error("❌ Failed to create OpenAI stream:", error);
+          if (!writeSSE("error", { 
+            error: "Failed to create OpenAI stream",
+            details: error instanceof Error ? error.message : "Unknown error",
+            timestamp: new Date().toISOString()
+          })) return;
+          return;
+        }
 
         let assistantMessage = "";
         let toolCalls: any[] = [];
-        let currentToolCall: any = null;
+        let lastChoice: any = null;
 
         // Process stream using async iteration (proper OpenAI SDK v4 method)
-        for await (const chunk of stream) {
-          if (isConnectionClosed()) {
-            console.log("🛑 Connection closed during OpenAI stream");
-            return;
-          }
-
-          const choice = chunk.choices[0];
-          if (!choice) continue;
-
-          const delta = choice.delta;
-
-          // Handle content streaming
-          if (delta.content) {
-            assistantMessage += delta.content;
+        console.log("🔄 Starting to iterate over OpenAI stream...");
+        try {
+          for await (const chunk of stream) {
+            console.log("📦 Received chunk from OpenAI:", JSON.stringify(chunk, null, 2));
             
-            // Send token to client
-            if (!writeSSE("delta", { 
-              content: delta.content,
-              timestamp: new Date().toISOString()
-            })) return;
-          }
+            if (isConnectionClosed()) {
+              console.log("🛑 Connection closed during OpenAI stream");
+              return;
+            }
 
-          // Handle tool calls
-          if (delta.tool_calls) {
-            for (const toolCallDelta of delta.tool_calls) {
-              const index = toolCallDelta.index;
+            const choice = chunk.choices[0];
+            if (!choice) {
+              console.log("⚠️ No choice in chunk, continuing...");
+              continue;
+            }
+
+            lastChoice = choice;
+            const delta = choice.delta;
+            console.log("🔄 Processing delta:", JSON.stringify(delta, null, 2));
+
+            // Handle content streaming
+            if (delta.content) {
+              assistantMessage += delta.content;
+              console.log("📝 Sending content delta:", delta.content);
               
-              if (!toolCalls[index]) {
-                toolCalls[index] = {
-                  id: toolCallDelta.id || "",
-                  type: "function",
-                  function: {
-                    name: toolCallDelta.function?.name || "",
-                    arguments: ""
-                  }
-                };
-                currentToolCall = toolCalls[index];
-              }
+              // Send token to client
+              if (!writeSSE("delta", { 
+                content: delta.content,
+                timestamp: new Date().toISOString()
+              })) return;
+            } else if (delta.content === "") {
+              // Handle empty content (initial chunk) - send heartbeat to keep connection alive
+              console.log("💓 Sending heartbeat for empty content chunk");
+              if (!writeSSE("heartbeat", { 
+                timestamp: new Date().toISOString()
+              })) return;
+            }
 
-              if (toolCallDelta.function?.arguments) {
-                toolCalls[index].function.arguments += toolCallDelta.function.arguments;
+            // Handle tool calls
+            if (delta.tool_calls) {
+              console.log("🔧 Processing tool calls delta:", JSON.stringify(delta.tool_calls, null, 2));
+              for (const toolCallDelta of delta.tool_calls) {
+                const index = toolCallDelta.index;
+                
+                if (!toolCalls[index]) {
+                  toolCalls[index] = {
+                    id: toolCallDelta.id || "",
+                    type: "function",
+                    function: {
+                      name: toolCallDelta.function?.name || "",
+                      arguments: ""
+                    }
+                  };
+                }
+
+                if (toolCallDelta.function?.arguments) {
+                  toolCalls[index].function.arguments += toolCallDelta.function.arguments;
+                }
               }
             }
-          }
 
-          // Check for completion
-          if (choice.finish_reason === "stop") {
-            console.log("✅ OpenAI stream completed with stop reason");
-            break;
-          }
+            // Check for completion
+            if (choice.finish_reason === "stop") {
+              console.log("✅ OpenAI stream completed with stop reason");
+              break;
+            }
 
-          if (choice.finish_reason === "tool_calls") {
-            console.log("🔧 OpenAI stream completed with tool calls");
-            break;
+            if (choice.finish_reason === "tool_calls") {
+              console.log("🔧 OpenAI stream completed with tool calls");
+              break;
+            }
           }
+          console.log("✅ Finished iterating over OpenAI stream");
+        } catch (streamError) {
+          console.error("❌ Error during stream iteration:", streamError);
+          if (!writeSSE("error", { 
+            error: "Stream iteration failed",
+            details: streamError instanceof Error ? streamError.message : "Unknown error",
+            timestamp: new Date().toISOString()
+          })) return;
+          return;
         }
 
-        // Send completion signal
+        // Send completion signal for this iteration
         if (!writeSSE("completion", { 
           content: assistantMessage,
-          finish_reason: "stop",
+          finish_reason: lastChoice?.finish_reason || "stop",
           timestamp: new Date().toISOString()
         })) return;
 
