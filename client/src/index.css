@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import highlight.js theme for syntax highlighting */
+@import 'highlight.js/styles/github.css';
+
 @layer base {
   :root {
     --background: 0 0% 100%;

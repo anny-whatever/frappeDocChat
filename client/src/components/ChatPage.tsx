@@ -9,6 +9,7 @@ import { useChat, useHealth, useStats } from "../hooks/useApi";
 import type { Message, ConversationWithMessages } from "../services/api";
 import { apiService } from "../services/api";
 import { ConversationSidebar } from "./ConversationSidebar";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -256,9 +257,17 @@ export function ChatPage() {
                             : "bg-muted"
                         }`}
                       >
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                          {message.content}
-                        </p>
+                        {message.role === "user" ? (
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                            {message.content}
+                          </p>
+                        ) : (
+                          <MarkdownRenderer 
+                            content={message.content}
+                            isUserMessage={false}
+                            className="text-sm"
+                          />
+                        )}
                       </div>
 
                       <div className="flex gap-2 items-center mt-1">

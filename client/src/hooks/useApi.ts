@@ -23,8 +23,8 @@ export const useHealth = () => {
   return useQuery({
     queryKey: queryKeys.health,
     queryFn: apiService.checkHealth,
-    staleTime: 30000, // 30 seconds
-    refetchInterval: 60000, // 1 minute
+    staleTime: 30000000, // 30 seconds
+    refetchInterval: 60000000, // 1 minute
   });
 };
 
@@ -33,7 +33,7 @@ export const useDocuments = () => {
   return useQuery({
     queryKey: queryKeys.documents,
     queryFn: apiService.getAllDocuments,
-    staleTime: 300000, // 5 minutes
+    staleTime: 30000000, // 5 minutes
   });
 };
 
@@ -87,7 +87,7 @@ export const useSearchQuery = (
     queryKey: queryKeys.search(query, limit, threshold),
     queryFn: () => apiService.searchDocuments(query, limit, threshold),
     enabled: enabled && query.trim().length > 0,
-    staleTime: 300000, // 5 minutes
+    staleTime: 30000000, // 5 minutes
     retry: 2,
   });
 };
@@ -98,7 +98,7 @@ export const useDocument = (id: string, enabled: boolean = true) => {
     queryKey: ["document", id],
     queryFn: () => apiService.getDocumentById(id),
     enabled: enabled && !!id,
-    staleTime: 300000, // 5 minutes
+    staleTime: 30000000, // 5 minutes
   });
 };
 

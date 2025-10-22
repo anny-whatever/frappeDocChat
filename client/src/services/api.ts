@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 3000000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -182,22 +182,40 @@ export const apiService = {
 
   // Conversation management
   async getConversations(): Promise<Conversation[]> {
-    const response = await api.get<{conversations: Conversation[], count: number, timestamp: string}>(`/api/conversations`);
+    const response = await api.get<{
+      conversations: Conversation[];
+      count: number;
+      timestamp: string;
+    }>(`/api/conversations`);
     return response.data.conversations;
   },
 
-  async getConversation(conversationId: string): Promise<ConversationWithMessages> {
-    const response = await api.get<{conversation: ConversationWithMessages, timestamp: string}>(`/api/conversations/${conversationId}`);
+  async getConversation(
+    conversationId: string
+  ): Promise<ConversationWithMessages> {
+    const response = await api.get<{
+      conversation: ConversationWithMessages;
+      timestamp: string;
+    }>(`/api/conversations/${conversationId}`);
     return response.data.conversation;
   },
 
   async createConversation(data: ConversationData): Promise<Conversation> {
-    const response = await api.post<{conversation: Conversation, timestamp: string}>("/api/conversations", data);
+    const response = await api.post<{
+      conversation: Conversation;
+      timestamp: string;
+    }>("/api/conversations", data);
     return response.data.conversation;
   },
 
-  async updateConversation(conversationId: string, data: { title: string }): Promise<Conversation> {
-    const response = await api.patch<{conversation: Conversation, timestamp: string}>(`/api/conversations/${conversationId}`, data);
+  async updateConversation(
+    conversationId: string,
+    data: { title: string }
+  ): Promise<Conversation> {
+    const response = await api.patch<{
+      conversation: Conversation;
+      timestamp: string;
+    }>(`/api/conversations/${conversationId}`, data);
     return response.data.conversation;
   },
 
@@ -215,7 +233,6 @@ export const apiService = {
   },
 
   // Chat streaming (SSE over fetch)
-
 };
 
 export default apiService;
