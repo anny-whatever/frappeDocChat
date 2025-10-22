@@ -1,6 +1,9 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SearchPage } from './components/SearchPage';
-import './App.css'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { SearchPage } from "./components/SearchPage";
+import { ChatPage } from "./components/ChatPage";
+import { Navigation } from "./components/Navigation";
+import "./App.css";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -15,11 +18,18 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-background">
-        <SearchPage />
-      </div>
+      <BrowserRouter>
+        <div className="min-h-screen bg-background">
+          <Navigation />
+          <Routes>
+            <Route path="/" element={<Navigate to="/search" replace />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/chat" element={<ChatPage />} />
+          </Routes>
+        </div>
+      </BrowserRouter>
     </QueryClientProvider>
-  )
+  );
 }
 
-export default App
+export default App;

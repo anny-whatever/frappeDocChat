@@ -1,14 +1,21 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiService } from '../services/api';
-import type { SearchResponse, DocumentsResponse, StatsResponse, HealthResponse } from '../services/api';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiService } from "../services/api";
+import type {
+  SearchResponse,
+  DocumentsResponse,
+  StatsResponse,
+  HealthResponse,
+  ChatRequest,
+  ChatResponse,
+} from "../services/api";
 
 // Query keys
 export const queryKeys = {
-  health: ['health'] as const,
-  documents: ['documents'] as const,
-  stats: ['stats'] as const,
-  search: (query: string, limit: number, threshold: number) => 
-    ['search', query, limit, threshold] as const,
+  health: ["health"] as const,
+  documents: ["documents"] as const,
+  stats: ["stats"] as const,
+  search: (query: string, limit: number, threshold: number) =>
+    ["search", query, limit, threshold] as const,
 };
 
 // Health check hook
@@ -44,21 +51,25 @@ export const useSearch = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      query, 
-      limit = 10, 
-      threshold = 0.7 
-    }: { 
-      query: string; 
-      limit?: number; 
-      threshold?: number; 
+    mutationFn: async ({
+      query,
+      limit = 10,
+      threshold = 0.7,
+    }: {
+      query: string;
+      limit?: number;
+      threshold?: number;
     }) => {
       return apiService.searchDocuments(query, limit, threshold);
     },
     onSuccess: (data, variables) => {
       // Cache the search result
       queryClient.setQueryData(
-        queryKeys.search(variables.query, variables.limit || 10, variables.threshold || 0.7),
+        queryKeys.search(
+          variables.query,
+          variables.limit || 10,
+          variables.threshold || 0.7
+        ),
         data
       );
     },
@@ -84,9 +95,18 @@ export const useSearchQuery = (
 // Document by ID hook
 export const useDocument = (id: string, enabled: boolean = true) => {
   return useQuery({
-    queryKey: ['document', id],
+    queryKey: ["document", id],
     queryFn: () => apiService.getDocumentById(id),
     enabled: enabled && !!id,
     staleTime: 300000, // 5 minutes
+  });
+};
+
+// Chat hook
+export const useChat = () => {
+  return useMutation({
+    mutationFn: async (request: ChatRequest) => {
+      return apiService.chat(request);
+    },
   });
 };

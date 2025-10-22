@@ -1,8 +1,9 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { EmbeddingService } from './services/embeddingService.js';
-import { DatabaseService } from './services/databaseService.js';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { EmbeddingService } from "./services/embeddingService.js";
+import { DatabaseService } from "./services/databaseService.js";
+import { AgentService, Message } from "./agents/agentService.js";
 
 dotenv.config();
 
@@ -10,35 +11,38 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Services
 const embeddingService = EmbeddingService.getInstance();
 const databaseService = DatabaseService.getInstance();
+const agentService = AgentService.getInstance();
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+app.get("/health", (req, res) => {
+  res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
 // Search endpoint
-app.post('/api/search', async (req, res) => {
+app.post("/api/search", async (req, res) => {
   try {
     const { query, limit = 10, threshold = 0.3 } = req.body;
 
-    if (!query || typeof query !== 'string') {
+    if (!query || typeof query !== "string") {
       return res.status(400).json({
-        error: 'Query is required and must be a string',
+        error: "Query is required and must be a string",
       });
     }
 
     if (query.trim().length === 0) {
       return res.status(400).json({
-        error: 'Query cannot be empty',
+        error: "Query cannot be empty",
       });
     }
 
@@ -62,89 +66,132 @@ app.post('/api/search', async (req, res) => {
       count: results.length,
       timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
-    console.error('Search error:', error);
+    console.error("Search error:", error);
     res.status(500).json({
-      error: 'Internal server error during search',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      error: "Internal server error during search",
+      message: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
 // Get all documents endpoint
-app.get('/api/documents', async (req, res) => {
+app.get("/api/documents", async (req, res) => {
   try {
     const documents = await databaseService.getAllDocuments();
-    
+
     res.json({
       documents,
       count: documents.length,
       timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
-    console.error('Error fetching documents:', error);
+    console.error("Error fetching documents:", error);
     res.status(500).json({
-      error: 'Internal server error while fetching documents',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      error: "Internal server error while fetching documents",
+      message: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
 // Get document by ID endpoint
-app.get('/api/documents/:id', async (req, res) => {
+app.get("/api/documents/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // This would require adding a getDocumentById method to DatabaseService
     // For now, we'll return a simple response
     res.status(501).json({
-      error: 'Not implemented yet',
-      message: 'Individual document retrieval not yet implemented',
+      error: "Not implemented yet",
+      message: "Individual document retrieval not yet implemented",
     });
-
   } catch (error) {
-    console.error('Error fetching document:', error);
+    console.error("Error fetching document:", error);
     res.status(500).json({
-      error: 'Internal server error while fetching document',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      error: "Internal server error while fetching document",
+      message: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
 // Stats endpoint
-app.get('/api/stats', async (req, res) => {
+app.get("/api/stats", async (req, res) => {
   try {
     const documents = await databaseService.getAllDocuments();
-    
+
     res.json({
       totalDocuments: documents.length,
       timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    console.error("Error fetching stats:", error);
     res.status(500).json({
-      error: 'Internal server error while fetching stats',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      error: "Internal server error while fetching stats",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+// Chat endpoint - Agentic RAG Chat
+app.post("/api/chat", async (req, res) => {
+  try {
+    const { message, conversationHistory = [] } = req.body;
+
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({
+        error: "Message is required and must be a string",
+      });
+    }
+
+    if (message.trim().length === 0) {
+      return res.status(400).json({
+        error: "Message cannot be empty",
+      });
+    }
+
+    console.log(`💬 Chat request: "${message}"`);
+
+    // Process message through agent
+    const agentResponse = await agentService.processMessage(
+      message,
+      conversationHistory as Message[]
+    );
+
+    res.json({
+      message: agentResponse.response,
+      toolCalls: agentResponse.toolCalls,
+      conversationHistory: agentResponse.conversationHistory,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Chat error:", error);
+    res.status(500).json({
+      error: "Internal server error during chat",
+      message: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: err.message,
-  });
-});
+app.use(
+  (
+    err: Error,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    console.error("Unhandled error:", err);
+    res.status(500).json({
+      error: "Internal server error",
+      message: err.message,
+    });
+  }
+);
 
 // 404 handler
-app.use('*', (req, res) => {
+app.use("*", (req, res) => {
   res.status(404).json({
-    error: 'Not found',
+    error: "Not found",
     message: `Route ${req.method} ${req.originalUrl} not found`,
   });
 });
@@ -158,14 +205,14 @@ app.listen(PORT, () => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down server...');
+process.on("SIGINT", async () => {
+  console.log("\n🛑 Shutting down server...");
   await databaseService.disconnect();
   process.exit(0);
 });
 
-process.on('SIGTERM', async () => {
-  console.log('\n🛑 Shutting down server...');
+process.on("SIGTERM", async () => {
+  console.log("\n🛑 Shutting down server...");
   await databaseService.disconnect();
   process.exit(0);
 });

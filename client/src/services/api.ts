@@ -1,12 +1,12 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -17,7 +17,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('API Request Error:', error);
+    console.error("API Request Error:", error);
     return Promise.reject(error);
   }
 );
@@ -29,7 +29,7 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('API Response Error:', error.response?.data || error.message);
+    console.error("API Response Error:", error.response?.data || error.message);
     return Promise.reject(error);
   }
 );
@@ -80,10 +80,30 @@ export interface HealthResponse {
   timestamp: string;
 }
 
+export interface Message {
+  role: "system" | "user" | "assistant" | "function" | "tool";
+  content: string | null;
+  name?: string;
+  tool_calls?: any[];
+  tool_call_id?: string;
+}
+
+export interface ChatRequest {
+  message: string;
+  conversationHistory?: Message[];
+}
+
+export interface ChatResponse {
+  message: string;
+  toolCalls: any[];
+  conversationHistory: Message[];
+  timestamp: string;
+}
+
 export const apiService = {
   // Health check
   async checkHealth(): Promise<HealthResponse> {
-    const response = await api.get<HealthResponse>('/health');
+    const response = await api.get<HealthResponse>("/health");
     return response.data;
   },
 
@@ -93,7 +113,7 @@ export const apiService = {
     limit: number = 10,
     threshold: number = 0.3
   ): Promise<SearchResponse> {
-    const response = await api.post<SearchResponse>('/api/search', {
+    const response = await api.post<SearchResponse>("/api/search", {
       query,
       limit,
       threshold,
@@ -103,7 +123,7 @@ export const apiService = {
 
   // Get all documents
   async getAllDocuments(): Promise<DocumentsResponse> {
-    const response = await api.get<DocumentsResponse>('/api/documents');
+    const response = await api.get<DocumentsResponse>("/api/documents");
     return response.data;
   },
 
@@ -115,7 +135,13 @@ export const apiService = {
 
   // Get stats
   async getStats(): Promise<StatsResponse> {
-    const response = await api.get<StatsResponse>('/api/stats');
+    const response = await api.get<StatsResponse>("/api/stats");
+    return response.data;
+  },
+
+  // Chat with agent
+  async chat(request: ChatRequest): Promise<ChatResponse> {
+    const response = await api.post<ChatResponse>("/api/chat", request);
     return response.data;
   },
 };

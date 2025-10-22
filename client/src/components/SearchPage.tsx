@@ -117,8 +117,8 @@ export function SearchPage() {
     <div className="container px-4 py-8 mx-auto max-w-6xl">
       {/* Header */}
       <div className="mb-8 text-center">
-        <h1 className="mb-4 text-4xl font-bold">Frappe Documentation Search</h1>
-        <p className="mb-6 text-lg text-muted-foreground">
+        <h1 className="mb-4 text-3xl font-bold">Documentation Search</h1>
+        <p className="mb-6 text-muted-foreground">
           Search through Frappe framework documentation using AI-powered
           semantic search
         </p>
@@ -323,7 +323,7 @@ export function SearchPage() {
           <CardContent className="py-12 text-center">
             <Search className="mx-auto mb-6 w-16 h-16 text-muted-foreground" />
             <h3 className="mb-4 text-xl font-medium">
-              Welcome to Frappe Documentation Search
+              Semantic Documentation Search
             </h3>
             <p className="mx-auto max-w-2xl text-muted-foreground">
               This AI-powered search helps you find relevant information from
