@@ -194,8 +194,7 @@ app.post("/api/chat/stream", async (req, res) => {
     res.setHeader("Connection", "keep-alive");
 
     // Helpful for proxies (Heroku, etc.) to flush data
-    // @ts-expect-error flushHeaders exists in Node's ServerResponse
-    if (typeof res.flushHeaders === "function") res.flushHeaders();
+    if (typeof (res as any).flushHeaders === "function") (res as any).flushHeaders();
 
     const writeEvent = (event: string, data: any) => {
       res.write(`event: ${event}\n`);

@@ -80,10 +80,19 @@ export class ToolRegistry {
         parameters: {
           type: "object",
           properties: tool.parameters.reduce((acc, param) => {
-            acc[param.name] = {
+            const property: any = {
               type: param.type,
               description: param.description,
             };
+            
+            // For array parameters, add items property
+            if (param.type === "array") {
+              property.items = {
+                type: "string"
+              };
+            }
+            
+            acc[param.name] = property;
             return acc;
           }, {} as Record<string, any>),
           required: tool.parameters
