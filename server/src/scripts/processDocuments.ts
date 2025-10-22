@@ -10,6 +10,7 @@ interface DocumentInfo {
   filename: string;
   title: string;
   content: string;
+  sourceUrl?: string;
 }
 
 class DocumentProcessor {
@@ -27,9 +28,9 @@ class DocumentProcessor {
    * @returns string The extracted title
    */
   private extractTitle(filename: string): string {
-    // Remove .txt extension and replace underscores/hyphens with spaces
+    // Remove .txt or .json extension and replace underscores/hyphens with spaces
     return filename
-      .replace(".txt", "")
+      .replace(/\.(txt|json)$/, "")
       .replace(/[_-]/g, " ")
       .replace(/\b\w/g, (l) => l.toUpperCase());
   }
@@ -42,20 +43,42 @@ class DocumentProcessor {
   private async readDocument(filePath: string): Promise<DocumentInfo | null> {
     try {
       const filename = path.basename(filePath);
-      const content = fs.readFileSync(filePath, "utf-8");
+      const fileContent = fs.readFileSync(filePath, "utf-8");
 
       // Skip empty files
-      if (!content.trim()) {
+      if (!fileContent.trim()) {
         console.log(`Skipping empty file: ${filename}`);
         return null;
       }
 
-      const title = this.extractTitle(filename);
+      let documentData: any;
+      let content: string;
+      let title: string;
+      let sourceUrl: string | undefined;
+
+      // Check if file is JSON format (new format) or plain text (old format)
+      if (filename.endsWith('.json')) {
+        try {
+          documentData = JSON.parse(fileContent);
+          content = documentData.content || '';
+          title = documentData.title || this.extractTitle(filename);
+          sourceUrl = documentData.sourceUrl;
+        } catch (parseError) {
+          console.error(`Error parsing JSON file ${filename}:`, parseError);
+          return null;
+        }
+      } else {
+        // Legacy text format
+        content = fileContent.trim();
+        title = this.extractTitle(filename);
+        sourceUrl = undefined;
+      }
 
       return {
         filename,
         title,
-        content: content.trim(),
+        content,
+        sourceUrl,
       };
     } catch (error) {
       console.error(`Error reading file ${filePath}:`, error);
@@ -114,6 +137,7 @@ class DocumentProcessor {
       content: document.content,
       embedding,
       isChunked: false,
+      sourceUrl: document.sourceUrl,
       metadata: {
         processedAt: new Date().toISOString(),
         contentLength: document.content.length,
@@ -181,6 +205,7 @@ class DocumentProcessor {
         parentDocId,
         chunkIndex: chunk.chunkIndex,
         totalChunks: chunks.length,
+        sourceUrl: document.sourceUrl,
         metadata: {
           processedAt: new Date().toISOString(),
           contentLength: chunk.content.length,
@@ -203,10 +228,10 @@ class DocumentProcessor {
         return;
       }
 
-      // Get all .txt files from the directory
+      // Get all .txt and .json files from the directory
       const files = fs
         .readdirSync(SCRAPED_DOCS_DIR)
-        .filter((file) => file.endsWith(".txt"))
+        .filter((file) => file.endsWith(".txt") || file.endsWith(".json"))
         .map((file) => path.join(SCRAPED_DOCS_DIR, file));
 
       console.log(`Found ${files.length} document files to process`);

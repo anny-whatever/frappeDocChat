@@ -17,6 +17,7 @@ model Document {
   filename        String
   title           String
   content         String
+  sourceUrl       String?
   embedding       Unsupported("vector(1536)")?
   metadata        Json?
   isChunked       Boolean  @default(false)

@@ -43,6 +43,7 @@ export interface SearchResult {
   metadata?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
+  sourceUrl?: string;
 }
 
 export interface SearchResponse {
@@ -60,6 +61,7 @@ export interface Document {
   metadata?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
+  sourceUrl?: string;
 }
 
 export interface DocumentsResponse {

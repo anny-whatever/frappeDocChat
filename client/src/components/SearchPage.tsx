@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, FileText, Clock, Database, AlertCircle } from 'lucide-react';
+import { Search, FileText, Clock, Database, AlertCircle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -198,6 +198,22 @@ export function SearchPage() {
                     <p className="text-sm leading-relaxed">
                       {truncateContent(result.content)}
                     </p>
+                    
+                    {/* Source Link */}
+                    {result.sourceUrl && (
+                      <div className="mt-3 pt-3 border-t">
+                        <a
+                          href={result.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          View in Frappe Documentation
+                        </a>
+                      </div>
+                    )}
+                    
                     {result.metadata && Object.keys(result.metadata).length > 0 && (
                       <div className="mt-3 pt-3 border-t">
                         <div className="flex flex-wrap gap-1">

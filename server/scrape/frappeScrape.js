@@ -30,7 +30,24 @@ function cleanText(text) {
 
 // Helper function to create safe filename from route
 function routeToFilename(route) {
-  return route.replace(/\//g, "_") + ".txt";
+  return route.replace(/\//g, "_") + ".json";
+}
+
+// Helper function to extract title from content
+function extractTitleFromContent(content) {
+  if (!content) return null;
+  
+  // Try to find the first line that looks like a title
+  const lines = content.split('\n').filter(line => line.trim());
+  if (lines.length > 0) {
+    const firstLine = lines[0].trim();
+    // If the first line is short and doesn't end with punctuation, it's likely a title
+    if (firstLine.length < 100 && !firstLine.match(/[.!?]$/)) {
+      return firstLine;
+    }
+  }
+  
+  return null;
 }
 
 // Function to fetch and parse a page
@@ -137,12 +154,21 @@ async function scrapeAll() {
     // Parse content
     const content = parsePageContent(html);
 
-    // Save content to file
+    // Create document data with source URL
+    const documentData = {
+      route: route,
+      sourceUrl: `${BASE_URL}/${route}`,
+      title: extractTitleFromContent(content) || route.split('/').pop(),
+      content: content,
+      scrapedAt: new Date().toISOString()
+    };
+
+    // Save content to file (now as JSON)
     const filename = routeToFilename(route);
     const filepath = join(OUTPUT_DIR, filename);
 
     try {
-      writeFileSync(filepath, content, "utf-8");
+      writeFileSync(filepath, JSON.stringify(documentData, null, 2), "utf-8");
       console.log(`✓ Saved: ${filename} (${content.length} chars)`);
       successCount++;
     } catch (error) {

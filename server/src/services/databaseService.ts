@@ -12,6 +12,7 @@ export interface DocumentData {
   parentDocId?: string;
   chunkIndex?: number;
   totalChunks?: number;
+  sourceUrl?: string;
 }
 
 export interface SearchResult {
@@ -21,6 +22,7 @@ export interface SearchResult {
   content: string;
   metadata?: any;
   similarity?: number;
+  sourceUrl?: string;
 }
 
 export class DatabaseService {
@@ -49,7 +51,7 @@ export class DatabaseService {
         INSERT INTO documents (
           id, filename, title, content, embedding, metadata, 
           "isChunked", "parentDocId", "chunkIndex", "totalChunks",
-          "createdAt", "updatedAt"
+          "sourceUrl", "createdAt", "updatedAt"
         )
         VALUES (
           gen_random_uuid()::text,
@@ -66,6 +68,7 @@ export class DatabaseService {
               : null
           },
           ${documentData.totalChunks || null},
+          ${documentData.sourceUrl || null},
           NOW(),
           NOW()
         )
@@ -108,6 +111,7 @@ export class DatabaseService {
           "parentDocId",
           "chunkIndex",
           "totalChunks",
+          "sourceUrl",
           1 - (embedding <=> ${embeddingString}::vector) as similarity
         FROM documents
         WHERE embedding IS NOT NULL
@@ -131,6 +135,7 @@ export class DatabaseService {
             totalChunks: result.totalChunks,
           },
           similarity: parseFloat(result.similarity),
+          sourceUrl: result.sourceUrl,
         }));
     } catch (error) {
       console.error("Error searching documents:", error);
@@ -151,10 +156,14 @@ export class DatabaseService {
           title: true,
           content: true,
           metadata: true,
+          sourceUrl: true,
         },
       });
 
-      return documents;
+      return documents.map(doc => ({
+        ...doc,
+        sourceUrl: doc.sourceUrl || undefined,
+      }));
     } catch (error) {
       console.error("Error fetching documents:", error);
       throw new Error("Failed to fetch documents");
