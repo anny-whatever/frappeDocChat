@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import crypto from "crypto";
 import { EmbeddingService } from "./services/embeddingService.js";
 import { DatabaseService } from "./services/databaseService.js";
 import { AgentService } from "./services/agentService.js";
@@ -26,9 +27,109 @@ const databaseService = DatabaseService.getInstance();
 const agentService = AgentService.getInstance();
 const conversationService = ConversationService.getInstance();
 
+// Store valid tokens in memory (simple approach)
+const validTokens = new Set<string>();
+
+// Authentication middleware
+const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Skip authentication for health check and auth endpoints
+  if (req.path === "/health" || req.path.startsWith("/api/auth/")) {
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({
+      error: "Access token required",
+    });
+  }
+
+  if (!validTokens.has(token)) {
+    return res.status(401).json({
+      error: "Invalid or expired token",
+    });
+  }
+
+  next();
+};
+
+// Apply authentication middleware to all routes
+app.use(authenticateToken);
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
+});
+
+// Authentication endpoint
+app.post("/api/auth/login", (req, res) => {
+  try {
+    const { password } = req.body;
+
+    if (!password || typeof password !== "string") {
+      return res.status(400).json({
+        error: "Password is required and must be a string",
+      });
+    }
+
+    const authPassword = process.env.AUTH_PASSWORD;
+    if (!authPassword) {
+      console.error("AUTH_PASSWORD environment variable is not set");
+      return res.status(500).json({
+        error: "Server configuration error",
+      });
+    }
+
+    if (password !== authPassword) {
+      return res.status(401).json({
+        error: "Invalid password",
+      });
+    }
+
+    // Generate a simple token (not JWT, just a random string)
+    const token = crypto.randomBytes(32).toString('hex');
+    
+    // Store the token as valid
+    validTokens.add(token);
+    
+    res.json({
+      success: true,
+      token,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Authentication error:", error);
+    res.status(500).json({
+      error: "Internal server error during authentication",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+// Logout endpoint
+app.post("/api/auth/logout", (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (token && validTokens.has(token)) {
+      validTokens.delete(token);
+    }
+
+    res.json({
+      success: true,
+      message: "Logged out successfully",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({
+      error: "Internal server error during logout",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
 });
 
 // Search endpoint

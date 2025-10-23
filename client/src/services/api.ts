@@ -10,10 +10,17 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for logging
+// Request interceptor for logging and authentication
 api.interceptors.request.use(
   (config) => {
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    
+    // Add authentication token if available
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     return config;
   },
   (error) => {
@@ -30,6 +37,17 @@ api.interceptors.response.use(
   },
   (error) => {
     console.error("API Response Error:", error.response?.data || error.message);
+    
+    // Handle 401 Unauthorized responses
+    if (error.response?.status === 401) {
+      // Clear the token from localStorage
+      localStorage.removeItem('auth_token');
+      
+      // Reload the page to trigger re-authentication
+      // This is a simple approach - in a more complex app you might use a global state manager
+      window.location.reload();
+    }
+    
     return Promise.reject(error);
   }
 );

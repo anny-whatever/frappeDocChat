@@ -1,11 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
-import { Search, MessageCircle } from "lucide-react";
+import { Search, MessageCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "../contexts/AuthContext";
 
 export function Navigation() {
   const location = useLocation();
+  const { logout } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <nav className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
@@ -41,6 +47,16 @@ export function Navigation() {
               <MessageCircle className="w-4 h-4" />
               Chat
             </Link>
+          </Button>
+
+          <Button
+            onClick={handleLogout}
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
           </Button>
         </div>
       </div>
